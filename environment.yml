@@ -1,0 +1,13 @@
+# Conda environment for PrimateFace
+# This creates a conda env and installs the package with pip
+name: primateface
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    # Install only the base package in editable mode
+    # PyTorch will be installed separately based on CUDA version
+    - -e .

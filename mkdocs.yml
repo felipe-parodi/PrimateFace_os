@@ -1,0 +1,163 @@
+site_name: PrimateFace Documentation
+site_url: https://docs.primateface.studio
+site_description: A Machine Learning Resource for Automated Primate Face Analysis
+site_author: Kording Lab
+
+repo_name: KordingLab/PrimateFace
+repo_url: https://github.com/KordingLab/PrimateFace
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: Roboto Mono
+  favicon: visuals/Figure2_PF.png
+  logo: visuals/primateface_logo.png
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Overview: getting-started/index.md
+    - Installation: installation/index.md
+    - Quick Start: getting-started/quickstart.md
+    - Decision Tree: getting-started/decision-tree.md
+  - Tutorials:
+    - Overview: tutorials/index.md
+    - Lemur Time-Stamping: tutorials/lemur_timestamping.md
+    - Macaque Recognition: tutorials/macaque_recognition.md
+    - Gaze Following: tutorials/gaze_following.md
+  - User Guide:
+    - Core Workflows:
+      - Overview: user-guide/core-workflows/index.md
+      - Demos: user-guide/core-workflows/demos.md
+      - DINOv2: user-guide/core-workflows/dinov2.md
+      - GUI: user-guide/core-workflows/gui.md
+      - Landmark Converter: user-guide/core-workflows/landmark-converter.md
+    - Framework Integration:
+      - Overview: user-guide/framework-integration/index.md
+      - MMDetection/MMPose: user-guide/framework-integration/mmpose-mmdetection.md
+      - DeepLabCut: user-guide/framework-integration/deeplabcut.md
+      - SLEAP: user-guide/framework-integration/sleap.md
+      - YOLO: user-guide/framework-integration/ultralytics.md
+    - Utilities:
+      - Overview: user-guide/utilities/index.md
+      - Evaluation: user-guide/utilities/evaluation.md
+      - Data Processing: user-guide/utilities/data-processing.md
+      - Visualization: user-guide/utilities/visualization.md
+    - Concepts: user-guide/concepts.md
+  - API Reference:
+    - Overview: api/index.md
+    - Detection: api/detection.md
+    - Pose Estimation: api/pose.md
+    - Annotation: api/annotation.md
+    - DINOv2: api/dinov2.md
+    - Converter: api/converter.md
+    - Evaluation: api/evaluation.md
+    - Demos: api/demos.md
+    - GUI: api/gui.md
+  - Data & Models:
+    - Overview: data-models/index.md
+    - Dataset: data.md
+    - Models: models.md
+    - Paper: paper.md
+  - Troubleshooting: troubleshooting.md
+  - Contributing: contribute.md
+
+plugins:
+  - search:
+      separator: '[\s\-\.]+'
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
+      htmlmin_opts:
+        remove_comments: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - tables
+  - footnotes
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/KordingLab/PrimateFace
+    - icon: fontawesome/solid/paper-plane
+      link: mailto:primateface@gmail.com
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/KordingLab
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX  # Add your Google Analytics ID here
+  version:
+    provider: mike
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+copyright: Copyright &copy; 2024 Kording Lab & Platt Lab - University of Pennsylvania

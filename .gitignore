@@ -1,0 +1,117 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Model weights and checkpoints
+*.pth
+*.ckpt
+*.h5
+*.pkl
+*.pickle
+*.safetensors
+
+# Downloaded model configs (demos)
+demos/mmdet_config.py
+demos/mmpose_config.py
+demos/mmdet_checkpoint.pth
+demos/mmpose_checkpoint.pth
+demos/test_output/
+demos/results/
+
+
+# Data files
+*.csv
+*.json
+*.npy
+*.npz
+*.mat
+
+# Logs
+*.log
+logs/
+runs/
+
+# Temporary files
+tmp/
+temp/
+cache/
+
+# API keys and credentials
+*_auth_token.txt
+*_api_key.txt
+credentials.json
+secrets.json
+
+.claude
+.pytest_cache/
+.coverage
+.tox/
+.htmlcov/
+
+# MkDocs build output
+site/ 
+
+*.svg
+
+# Plan files
+TODOS.md
+CHANGES.md
+preprint.pdf
+docs/DOCUMENTATION_REVIEW.md
+docs/FINAL_REVIEW_CHECKLIST.md
+dinov2/PLAN.md
+landmark-converter/PLAN.md
+gui/CONSOLIDATION_PLAN.md
+gui/PLAN.md
+gui/MIGRATION_CHECKLIST.md
+REQUIREMENTS_ANALYSIS.md
+landmark-converter/outputs/
+landmark-converter/models/__pycache__/
+evals/PLAN.md
+evals/PLAN.md
+
+
+# Server files with credentials
+docs/gradio/primateface_server.py
+AGENTS.md
+AGENTS.md
