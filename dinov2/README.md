@@ -103,7 +103,7 @@ See central docs (Internals) for:
 - Attention visualization
 - Memory-efficient processing
 - Custom UMAP parameters
-- Multi-**layer** analysis
+- Multi-layer analysis
 - Batch processing
 - Performance optimization
 
