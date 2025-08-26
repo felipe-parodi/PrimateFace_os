@@ -11,6 +11,7 @@ Extract and analyze DINOv2 features from primate images. Core functionality:
 ## Installation
 
 ```bash
+# Ensure you have the PrimateFace environment activated and PyTorch installed before running this command
 uv pip install -e ".[dinov2]"
 ```
 
@@ -46,6 +47,8 @@ python -m dinov2.dinov2_cli visualize \
     --embeddings embeddings.pt \
     --output viz.html \
     --interactive
+    --n-clusters 5
+    --show-images
 ```
 
 ### 3. Select Diverse Subset
@@ -100,7 +103,7 @@ See central docs (Internals) for:
 - Attention visualization
 - Memory-efficient processing
 - Custom UMAP parameters
-- Multi-layer analysis
+- Multi-**layer** analysis
 - Batch processing
 - Performance optimization
 

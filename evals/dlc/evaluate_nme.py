@@ -126,13 +126,50 @@ def main() -> None:
     parser.add_argument(
         "--model_dir",
         type=Path,
+        required=True,
         help="Path to the directory containing trained model snapshots and config.",
+    )
+    parser.add_argument(
+        "--test_json",
+        type=Path,
+        required=True,
+        help="Path to test COCO JSON file.",
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=32,
+        help="Batch size for evaluation.",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default=None,
+        help="Directory to save evaluation results and visualizations.",
+    )
+    parser.add_argument(
+        "--norm_indices",
+        type=int,
+        nargs=2,
+        default=[36, 45],
+        help="Keypoint indices for normalization (e.g., outer eye corners).",
     )
     parser.add_argument(
         "--device",
         type=str,
         default="cuda",
         help="The device to run evaluation on (e.g., 'cuda', 'cuda:0', 'cpu').",
+    )
+    parser.add_argument(
+        "--save_viz",
+        action="store_true",
+        help="Save visualization images of predictions.",
+    )
+    parser.add_argument(
+        "--max_viz",
+        type=int,
+        default=20,
+        help="Maximum number of images to visualize.",
     )
     args = parser.parse_args()
 
@@ -164,9 +201,9 @@ def main() -> None:
     # Use the PrimateFaceCOCOLoader to get parameters and correctly processed data.
     data_loader = PrimateFaceCOCOLoader(
         model_config_path=model_config_path,
-        train_json_path=TEST_JSON_PATH,  # Not used for test, but path needed for init
-        val_json_path=TEST_JSON_PATH,    # Not used for test, but path needed for init
-        test_json_path=TEST_JSON_PATH,
+        train_json_path=args.test_json,  # Using same file for all splits
+        val_json_path=args.test_json,    # Using same file for all splits
+        test_json_path=args.test_json,
     )
     params = data_loader.get_dataset_parameters()
     task = Task(model_cfg.get("method", "BU").upper())
@@ -192,7 +229,7 @@ def main() -> None:
     )
     test_loader = DataLoader(
         test_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=args.batch_size,
         shuffle=False,
         pin_memory=True,
         num_workers=4,
@@ -209,7 +246,7 @@ def main() -> None:
     all_masks = []
     all_norm_factors = []
 
-    kpt_idx1, kpt_idx2 = NORM_KEYPOINT_INDICES
+    kpt_idx1, kpt_idx2 = args.norm_indices
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating"):
@@ -259,8 +296,91 @@ def main() -> None:
     print("\n" + "=" * 80)
     print(f"🎉 Evaluation Finished!")
     print(f"Normalized Mean Error (NME): {nme_score:.6f}")
-    print(f"Normalization indices used: {NORM_KEYPOINT_INDICES}")
+    print(f"Normalization indices used: {args.norm_indices}")
     print("=" * 80)
+    
+    # Save results if output directory specified
+    if args.output_dir:
+        import json
+        import cv2
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save NME results
+        results = {
+            "nme_score": float(nme_score),
+            "norm_indices": args.norm_indices,
+            "test_json": str(args.test_json),
+            "model_dir": str(args.model_dir),
+            "num_test_samples": len(final_pred_coords),
+        }
+        
+        results_path = args.output_dir / "evaluation_results.json"
+        with open(results_path, 'w') as f:
+            json.dump(results, f, indent=2)
+        print(f"✅ Results saved to: {results_path}")
+        
+        # Generate visualizations if requested
+        if args.save_viz:
+            print(f"⏳ Generating visualizations for up to {args.max_viz} images...")
+            viz_dir = args.output_dir / "visualizations"
+            viz_dir.mkdir(exist_ok=True)
+            
+            # Re-run inference on a subset for visualization
+            model.eval()
+            num_viz = 0
+            
+            with torch.no_grad():
+                for batch in test_loader:
+                    if num_viz >= args.max_viz:
+                        break
+                        
+                    images = batch["image"].to(device)
+                    gt_kpts = batch["annotations"]["keypoints"]
+                    
+                    # Get predictions
+                    outputs = model(images)
+                    predictions = model.get_predictions(outputs)
+                    pred_kpts = predictions["bodypart"]["poses"]
+                    
+                    # Convert to numpy for visualization
+                    images_np = images.cpu().numpy()
+                    gt_kpts_np = gt_kpts.cpu().numpy()
+                    pred_kpts_np = pred_kpts.cpu().numpy()
+                    
+                    for i in range(min(len(images_np), args.max_viz - num_viz)):
+                        # Denormalize image
+                        img = images_np[i].transpose(1, 2, 0)
+                        img = (img * np.array([0.229, 0.224, 0.225])) + np.array([0.485, 0.456, 0.406])
+                        img = np.clip(img * 255, 0, 255).astype(np.uint8)
+                        img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                        
+                        # Create side-by-side visualization
+                        img_gt = img_bgr.copy()
+                        img_pred = img_bgr.copy()
+                        
+                        # Draw ground truth (green)
+                        for kpt in gt_kpts_np[i, 0]:
+                            if kpt[2] > 0:  # visible
+                                cv2.circle(img_gt, (int(kpt[0]), int(kpt[1])), 3, (0, 255, 0), -1)
+                        
+                        # Draw predictions (red)
+                        for kpt in pred_kpts_np[i, 0]:
+                            if kpt[2] > 0.3:  # confidence threshold
+                                cv2.circle(img_pred, (int(kpt[0]), int(kpt[1])), 3, (0, 0, 255), -1)
+                        
+                        # Add labels
+                        cv2.putText(img_gt, 'Ground Truth', (10, 30), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                        cv2.putText(img_pred, 'Predictions', (10, 30), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                        
+                        # Combine and save
+                        combined = np.hstack([img_gt, img_pred])
+                        viz_path = viz_dir / f"eval_sample_{num_viz:03d}.png"
+                        cv2.imwrite(str(viz_path), combined)
+                        num_viz += 1
+            
+            print(f"✅ Saved {num_viz} visualizations to: {viz_dir}")
 
 
 if __name__ == "__main__":

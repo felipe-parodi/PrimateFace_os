@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 import cv2
 import argparse
 import os
+import random
 from typing import Dict, List, Tuple, Optional, Any, Union
 from deeplabcut.pose_estimation_pytorch.data.cocoloader import COCOLoader
 from deeplabcut.pose_estimation_pytorch.data.dataset import PoseDataset
@@ -52,13 +53,10 @@ from torch.utils.data import DataLoader
 
 KPT_THRESHOLD = 0.05
 
-# Step 1: Provide paths to your COCO JSON files
-# =================================================================
-# TRAIN_JSON_PATH = "/path/to/your/train.json"
-TRAIN_JSON_PATH = "path/to/train.json"
-VAL_JSON_PATH = "path/to/val.json"
-TEST_JSON_PATH = "path/to/test.json"
-# =================================================================
+# Default paths (can be overridden with command-line arguments)
+TRAIN_JSON_PATH = None
+VAL_JSON_PATH = None
+TEST_JSON_PATH = None
 
 
 def list_available_models():
@@ -328,13 +326,17 @@ class PrimateFaceCOCOLoader(COCOLoader):
         train_json_path: str | Path,
         val_json_path: str | Path,
         test_json_path: str | Path | None = None,
+        image_dir: Optional[str] = None,
     ):
-        # Call the grandparent's __init__ to set up project_root, etc.
-        # We use a dummy project_root because image paths are absolute
-        # and we load JSONs directly.
+        if image_dir:
+            image_root = Path(image_dir)
+        else:
+            # Fallback for absolute paths or paths relative to the JSON file
+            image_root = Path(train_json_path).parent
+
         super(COCOLoader, self).__init__(
             project_root=Path(train_json_path).parent,
-            image_root=Path(train_json_path).parent,
+            image_root=image_root,
             model_config_path=Path(model_config_path),
         )
 
@@ -562,6 +564,48 @@ def main():
         default=64,
         help="Batch size for training.",
     )
+    parser.add_argument(
+        "--train_json",
+        type=str,
+        default=None,
+        help="Path to training COCO JSON file. If not provided, uses all data from --coco_json.",
+    )
+    parser.add_argument(
+        "--val_json",
+        type=str,
+        default=None,
+        help="Path to validation COCO JSON file. If not provided, uses all data from --coco_json.",
+    )
+    parser.add_argument(
+        "--test_json",
+        type=str,
+        default=None,
+        help="Path to test COCO JSON file. If not provided, uses all data from --coco_json.",
+    )
+    parser.add_argument(
+        "--coco_json",
+        type=str,
+        default=None,
+        help="Single COCO JSON file to use for train/val/test (will be split automatically).",
+    )
+    parser.add_argument(
+        "--val_split",
+        type=float,
+        default=0.15,
+        help="Validation split ratio when using single COCO JSON file.",
+    )
+    parser.add_argument(
+        "--test_split",
+        type=float,
+        default=0.15,
+        help="Test split ratio when using single COCO JSON file.",
+    )
+    parser.add_argument(
+        "--image_dir",
+        type=str,
+        default=None,
+        help="Path to the image directory. If not set, paths in COCO file are assumed to be absolute.",
+    )
     args = parser.parse_args()
 
     device = torch.device(
@@ -570,18 +614,108 @@ def main():
 
     list_available_models()
 
-    train_json = Path(TRAIN_JSON_PATH)
-    val_json = Path(VAL_JSON_PATH)
-    test_json = Path(TEST_JSON_PATH)
+    # Determine JSON paths based on arguments
+    if args.coco_json:
+        if not Path(args.coco_json).exists():
+            print(f"🛑 Error: COCO JSON file not found: {args.coco_json}")
+            return
 
-    if not train_json.exists() or not test_json.exists() or not val_json.exists():
+        print("⏳ Loading and splitting single COCO file...")
+        with open(args.coco_json, 'r') as f:
+            data = json.load(f)
+
+        images = data['images']
+        random.seed(42) # for reproducibility
+        random.shuffle(images)
+
+        # Calculate split points
+        n_images = len(images)
+        n_val = int(n_images * args.val_split)
+        n_test = int(n_images * args.test_split)
+        n_train = n_images - n_val - n_test
+
+        # Split images
+        train_images = images[:n_train]
+        val_images = images[n_train : n_train + n_val]
+        test_images = images[n_train + n_val :]
+
+        # Get image IDs for each split
+        train_ids = {img['id'] for img in train_images}
+        val_ids = {img['id'] for img in val_images}
+        test_ids = {img['id'] for img in test_images}
+
+        # Split annotations based on image IDs
+        train_anns = [ann for ann in data['annotations'] if ann['image_id'] in train_ids]
+        val_anns = [ann for ann in data['annotations'] if ann['image_id'] in val_ids]
+        test_anns = [ann for ann in data['annotations'] if ann['image_id'] in test_ids]
+
+        # Create new COCO dicts for each split
+        base_coco = {
+            'info': data.get('info', {}),
+            'licenses': data.get('licenses', []),
+            'categories': data.get('categories', []),
+        }
+        
+        train_coco = {**base_coco, 'images': train_images, 'annotations': train_anns}
+        val_coco = {**base_coco, 'images': val_images, 'annotations': val_anns}
+        test_coco = {**base_coco, 'images': test_images, 'annotations': test_anns}
+
+        # Save split JSONs to output directory
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        train_json = args.output_dir / 'train_split.json'
+        val_json = args.output_dir / 'val_split.json'
+        test_json = args.output_dir / 'test_split.json'
+
+        with open(train_json, 'w') as f:
+            json.dump(train_coco, f)
+        with open(val_json, 'w') as f:
+            json.dump(val_coco, f)
+        with open(test_json, 'w') as f:
+            json.dump(test_coco, f)
+
+        print(f"✅ Data split into:")
+        print(f"  - Train: {len(train_images)} images, {len(train_anns)} annotations ({train_json})")
+        print(f"  - Val:   {len(val_images)} images, {len(val_anns)} annotations ({val_json})")
+        print(f"  - Test:  {len(test_images)} images, {len(test_anns)} annotations ({test_json})")
+
+    elif args.train_json and args.val_json and args.test_json:
+        # Use separate files for each split
+        train_json = Path(args.train_json)
+        val_json = Path(args.val_json)
+        test_json = Path(args.test_json)
+        
+        if not train_json.exists():
+            print(f"🛑 Error: Training JSON not found: {args.train_json}")
+            return
+        if not val_json.exists():
+            print(f"🛑 Error: Validation JSON not found: {args.val_json}")
+            return
+        if not test_json.exists():
+            print(f"🛑 Error: Test JSON not found: {args.test_json}")
+            return
+        print("✅ Using separate COCO files for train/val/test")
+        
+    elif TRAIN_JSON_PATH and VAL_JSON_PATH and TEST_JSON_PATH:
+        # Fall back to module-level paths if they were set
+        train_json = Path(TRAIN_JSON_PATH)
+        val_json = Path(VAL_JSON_PATH)
+        test_json = Path(TEST_JSON_PATH)
+        
+        if not train_json.exists() or not val_json.exists() or not test_json.exists():
+            print("=" * 80)
+            print("🛑 Error: Please provide COCO JSON paths using one of these methods:")
+            print("   1. --coco_json path/to/file.json (uses same file for train/val/test)")
+            print("   2. --train_json, --val_json, and --test_json (separate files)")
+            print("=" * 80)
+            return
+    else:
         print("=" * 80)
-        print("🛑 Error: Please update TRAIN_JSON_PATH, VAL_JSON_PATH, and TEST_JSON_PATH")
-        print(f"Current train path: {TRAIN_JSON_PATH}")
-        print(f"Current val path: {VAL_JSON_PATH}")
-        print(f"Current test path: {TEST_JSON_PATH}")
+        print("🛑 Error: Please provide COCO JSON paths using one of these methods:")
+        print("   1. --coco_json path/to/file.json (uses same file for train/val/test)")
+        print("   2. --train_json, --val_json, and --test_json (separate files)")
         print("=" * 80)
         return
+    
     print("✅ Paths verified.")
 
     # Step 2: Create a model configuration file from your data
@@ -610,6 +744,7 @@ def main():
         train_json_path=train_json,
         val_json_path=val_json,
         test_json_path=test_json,
+        image_dir=args.image_dir,
     )
     print("✅ Loader initialized.")
 

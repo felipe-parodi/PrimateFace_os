@@ -5,6 +5,7 @@ MMPose, Ultralytics, and future frameworks. Includes SAM masking
 and flexible keypoint/skeleton handling.
 """
 
+import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -80,19 +81,41 @@ class PoseEstimator:
         
         self._setup_keypoint_info(coco_metadata)
     
+    def _load_keypoint_definitions(self) -> Dict:
+        """Loads predefined keypoint sets from a YAML file."""
+        definitions_path = Path(__file__).parent.parent / "keypoint_definitions.yml"
+        if not definitions_path.exists():
+            return {}
+        with open(definitions_path, 'r') as f:
+            return yaml.safe_load(f)
+
     def _setup_keypoint_info(self, coco_metadata: Optional[Dict]) -> None:
-        """Setup keypoint names and skeleton from model or COCO metadata.
-        
-        Args:
-            coco_metadata: Optional COCO category metadata.
-        """
+        """Setup keypoint names and skeleton from model or COCO metadata."""
         if coco_metadata and "keypoints" in coco_metadata:
             self.keypoint_names = coco_metadata["keypoints"]
             self.skeleton_links = coco_metadata.get("skeleton", [])
-        elif self.metadata:
+            return
+
+        if self.framework == FrameworkType.MMPOSE:
+            try:
+                # Get the number of keypoints from the model's config
+                num_kpts = self.model.cfg.model.head.out_channels
+                
+                # Load predefined keypoint sets
+                definitions = self._load_keypoint_definitions()
+                
+                if num_kpts in definitions:
+                    config = definitions[num_kpts]
+                    self.keypoint_names = config.get('keypoint_names', [])
+                    self.skeleton_links = config.get('skeleton_links', [])
+                    return
+            except AttributeError:
+                pass  # Fallback to other methods if config structure is unexpected
+
+        if self.metadata:
             if self.framework == FrameworkType.MMPOSE:
-                self.keypoint_names = self.metadata.get("keypoints", [])
-                self.skeleton_links = self.metadata.get("skeleton", [])
+                self.keypoint_names = self.metadata.get("keypoint_names", [])
+                self.skeleton_links = self.metadata.get("skeleton_links", [])
             elif self.framework == FrameworkType.ULTRALYTICS:
                 num_kpts = self.metadata.get("num_keypoints", 17)
                 self.keypoint_names = [f"kpt_{i}" for i in range(num_kpts)]
