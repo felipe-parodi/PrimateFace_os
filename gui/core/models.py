@@ -17,9 +17,10 @@ class FrameworkType(Enum):
     MMDET = "mmdet"
     MMPOSE = "mmpose"
     ULTRALYTICS = "ultralytics"
-    DEEPLABCUT = "deeplabcut"
-    SLEAP = "sleap"
     SAM = "sam"
+    # Planned for future releases:
+    # DEEPLABCUT = "deeplabcut"
+    # SLEAP = "sleap"
 
 
 class ModelManager:
@@ -181,12 +182,12 @@ class ModelManager:
             "framework": "mmpose",
             "config": model.cfg,
             "dataset_meta": model.dataset_meta if hasattr(model, "dataset_meta") else {},
-            "keypoints": list(model.dataset_meta.get("keypoint_info", {}).keys()) 
-                if hasattr(model, "dataset_meta") else [],
-            "skeleton": model.dataset_meta.get("skeleton_info", [])
-                if hasattr(model, "dataset_meta") else []
         }
         
+        if hasattr(model, "dataset_meta"):
+            metadata["keypoint_names"] = model.dataset_meta.get("keypoint_names", [])
+            metadata["skeleton_links"] = model.dataset_meta.get("skeleton_links", [])
+            
         return model, metadata
     
     def _load_ultralytics(

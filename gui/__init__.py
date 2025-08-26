@@ -10,6 +10,7 @@ This module provides tools for:
 from .constants import *
 from .converters import COCOConverter, ImageCOCOConverter, VideoCOCOConverter
 from .core import Detector, FrameworkType, ModelManager, PoseEstimator, SAMMasker
+from .refine_boxes import COCORefinementGUI
 
 __version__ = "0.1.0"
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "COCOConverter",
     "ImageCOCOConverter",
     "VideoCOCOConverter",
+    "COCORefinementGUI",
 ]

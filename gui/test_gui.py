@@ -40,9 +40,9 @@ def mock_imports():
 mock_imports()
 
 # Now import our modules
-from constants import *
-from core.models import ModelConfig, ModelManager
-from converters.base import COCOConverter
+from gui.constants import *
+from gui.core.models import ModelManager, FrameworkType
+from gui.converters.base import COCOConverter
 
 
 class TestConstants(unittest.TestCase):

@@ -12,6 +12,9 @@ Train and evaluate [DeepLabCut](http://www.mackenziemathislab.org/deeplabcut) po
 ## Quick Start
 
 ```bash
+# Install DeepLabCut (tested version with 11.8)
+uv pip install deeplabcut==3.0.0rc8
+
 # Train a model
 python train_with_coco.py --model_type hrnet_w32 --output_dir ./dlc_model
 

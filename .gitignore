@@ -44,6 +44,7 @@ venv.bak/
 
 # Model weights and checkpoints
 *.pth
+*.pt
 *.ckpt
 *.h5
 *.pkl
@@ -58,6 +59,18 @@ demos/mmpose_checkpoint.pth
 demos/test_output/
 demos/results/
 
+# Downloaded YOLO models
+yolov*.pt
+yolov*.yaml
+
+# Test outputs
+test_*_output/
+test_*.pt
+test_*.html
+
+# Large model files in root
+td-hm_hrnet*.pth
+td-hm_hrnet*.py
 
 # Data files
 *.csv
@@ -108,10 +121,9 @@ REQUIREMENTS_ANALYSIS.md
 landmark-converter/outputs/
 landmark-converter/models/__pycache__/
 evals/PLAN.md
-evals/PLAN.md
-
 
 # Server files with credentials
 docs/gradio/primateface_server.py
 AGENTS.md
-AGENTS.md
+
+

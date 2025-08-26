@@ -62,24 +62,14 @@ python -m gui.pseudolabel generate \
     --output-dir ./output
 ```
 
-### 3. Refine Annotations
+### 3. Refine Annotations (Coming Soon)
 
-```python
-from gui.refinement import COCORefinementGUI
-import tkinter as tk
+**Note**: Interactive refinement GUI is currently under development.
 
-root = tk.Tk()
-gui = COCORefinementGUI(root, coco_path="annotations.json", images_dir="./images")
-root.mainloop()
-```
-
-Or via CLI:
-```bash
-python -m gui.pseudolabel refine \
-    --coco annotations.json \
-    --images ./images \
-    --output refined.json
-```
+For now, you can:
+- Use the `generate` command with review options
+- Edit COCO JSON files directly
+- Use third-party annotation tools that support COCO format
 
 ## Framework Options
 
@@ -88,8 +78,6 @@ python -m gui.pseudolabel refine \
 | `mmdet` | ✓ | | **Recommended** |
 | `mmpose` | | ✓ | **Recommended** |
 | `ultralytics` | ✓ | ✓ | Real-time |
-| `deeplabcut` | ✓ | ✓ | Behavioral |
-| `sleap` | ✓ | ✓ | Multi-animal |
 
 ## Processing Modes
 

@@ -145,9 +145,10 @@ Video.from_image_filenames = classmethod(_patched_from_image_filenames)
 # =================================================================
 # Step 1: Provide paths to your COCO JSON files and image directory
 # =================================================================
-TRAIN_JSON_PATH = r"A:\NonEnclosureProjects\inprep\PrimateFace\data\annos_from_rex\pf_w_hum_250626_19kimgs\split_hum_in_train\train.json"
-VAL_JSON_PATH = r"A:\NonEnclosureProjects\inprep\PrimateFace\data\annos_from_rex\pf_w_hum_250626_19kimgs\split_hum_in_train\val.json"
-TEST_JSON_PATH = r"A:\NonEnclosureProjects\inprep\PrimateFace\data\annos_from_rex\pf_w_hum_250626_19kimgs\split_hum_in_train\test.json"
+# IMPORTANT: Update these paths to point to your actual data files
+TRAIN_JSON_PATH = "./data/train.json"  # Update this path
+VAL_JSON_PATH = "./data/val.json"      # Update this path
+TEST_JSON_PATH = "./data/test.json"    # Update this path
 
 # The COCO format requires a single root directory for all image paths specified in the JSON.
 # If your JSON has absolute paths, this can be an empty string.

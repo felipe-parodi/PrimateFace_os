@@ -159,7 +159,7 @@ def main(args):
     print(f"Using device: {device}")
 
     # Load Model
-    model, _ = load_model_from_checkpoint(args.model_path, device)
+    model, train_args = load_model_from_checkpoint(args.model_path, device)
 
     # Load COCO Data
     print(f"Loading COCO annotations from: {args.coco_json}")
@@ -187,13 +187,33 @@ def main(args):
     
     print(f"Processing {len(image_ids_to_process)} images. Visualizations will be saved to {args.output_dir}")
     
+    # Prepare for COCO output if requested
+    output_coco_data = None
+    converted_annotations = []
+    if args.output_coco_json:
+        import copy
+        output_coco_data = copy.deepcopy(coco_data)
+        # Update categories if present - update number of keypoints
+        if "categories" in output_coco_data and len(output_coco_data["categories"]) > 0:
+            for cat in output_coco_data["categories"]:
+                if "keypoints" in cat:
+                    # Determine number of target keypoints from model
+                    num_target_kpts = model.num_target_kpts
+                    # Update keypoint names
+                    if len(cat["keypoints"]) >= num_target_kpts:
+                        cat["keypoints"] = cat["keypoints"][:num_target_kpts]
+                    else:
+                        cat["keypoints"] = [f"kpt_{i}" for i in range(num_target_kpts)]
+                    cat["num_keypoints"] = num_target_kpts
+    
     # Process each image
     for image_id in tqdm(image_ids_to_process, desc="Processing Images"):
         if image_id not in image_map:
             print(f"Warning: Skipping image_id {image_id} because it's not found in image map.")
             continue
         
-        image_path = image_map[image_id]
+        image_filename = image_map[image_id]
+        image_path = os.path.join(args.image_dir, image_filename)
         image_annotations = annotations_by_image[image_id]
 
         all_source_kpts = []
@@ -214,6 +234,23 @@ def main(args):
             
             all_source_kpts.append(source_kpts)
             all_predicted_kpts.append(predicted_kpts)
+            
+            # Store for COCO output if requested
+            if args.output_coco_json:
+                import copy
+                new_ann = copy.deepcopy(ann)
+                # Format predicted keypoints for COCO (x, y, visibility)
+                predicted_kpts_with_vis = np.column_stack([
+                    predicted_kpts[:, 0],  # x
+                    predicted_kpts[:, 1],  # y
+                    np.ones(len(predicted_kpts)) * 2  # visibility = 2 (visible)
+                ])
+                # Flatten to COCO format
+                new_ann["keypoints"] = predicted_kpts_with_vis.flatten().tolist()
+                new_ann["num_keypoints"] = int(len(predicted_kpts))
+                # Store original keypoints for reference
+                new_ann["original_keypoints"] = ann[args.source_kpt_field]
+                converted_annotations.append(new_ann)
 
         # If any valid predictions were made for this image, generate and save visualizations
         if all_predicted_kpts:
@@ -225,16 +262,35 @@ def main(args):
             base_filename = os.path.splitext(os.path.basename(image_path))[0]
             
             # Save individual plots based on flags
-            if args.save_pdf:
-                pdf_path = os.path.join(args.output_dir, f"{base_filename}_prediction.pdf")
-                fig.savefig(pdf_path)
-
             if args.save_png:
                 png_path = os.path.join(args.output_dir, f"{base_filename}_prediction.png")
                 fig.savefig(png_path)
+            elif args.save_pdf:
+                pdf_path = os.path.join(args.output_dir, f"{base_filename}_prediction.pdf")
+                fig.savefig(pdf_path)
 
             plt.close(fig) # Close figure after all saving operations
             
+    # Save COCO JSON if requested
+    if args.output_coco_json and output_coco_data:
+        output_coco_data["annotations"] = converted_annotations
+        # Add metadata about conversion
+        if "info" not in output_coco_data:
+            output_coco_data["info"] = {}
+        output_coco_data["info"]["conversion_info"] = {
+            "model_checkpoint": os.path.basename(args.model_path),
+            "source_keypoints": train_args.num_source_kpt,
+            "target_keypoints": model.num_target_kpts,
+            "total_annotations": len(coco_data["annotations"]),
+            "converted_annotations": len(converted_annotations)
+        }
+        
+        output_json_path = os.path.join(args.output_dir, args.output_coco_json)
+        with open(output_json_path, 'w') as f:
+            json.dump(output_coco_data, f, indent=2)
+        print(f"\n✓ COCO JSON saved to: {output_json_path}")
+        print(f"  Converted {len(converted_annotations)} annotations")
+    
     print(f"\nProcessing complete. Output saved in {args.output_dir}")
 
 
@@ -246,11 +302,13 @@ if __name__ == '__main__':
     
     # --- File Paths ---
     parser.add_argument("--model_path", type=str, 
-                        default=r"A:\NonEnclosureProjects\inprep\PrimateFace\results\landmark-converter\attMLP_2000eps\best_model.pth",
+                        required=True,
                         help="Path to the trained model checkpoint (.pth).")
     parser.add_argument("--coco_json", type=str, 
-                        default=r"A:\NonEnclosureProjects\inprep\PrimateFace\data\annos_from_rex\250528_labels\annotations\250528_Reviewed_NextisSplit_v3.json",
+                        required=True,
                         help="Path to the input COCO JSON file with source keypoints.")
+    parser.add_argument("--image-dir", type=str, required=True,
+                        help="Directory where the images are stored.")
     parser.add_argument("--output_dir", type=str, 
                         default="./outputs/inference/",
                         help="Directory to save the output visualization files.")
@@ -265,11 +323,15 @@ if __name__ == '__main__':
     
     # --- Plotting Arguments ---
     parser.add_argument("--save_png", action='store_true',
-                        help="Save visualization as a PNG file in addition to the default PDF.")
+                        help="Save visualization as a PNG file instead of the default PDF.")
     parser.add_argument('--save_pdf', action='store_true', default=True,
                         help='Save visualization as a PDF file (default behavior).')
     parser.add_argument('--no_pdf', dest='save_pdf', action='store_false',
                         help='Do not save visualization as a PDF file.')
+    
+    # --- COCO Output Arguments ---
+    parser.add_argument("--output_coco_json", type=str, default=None,
+                        help="Filename for output COCO JSON with converted keypoints (saved in output_dir).")
     
     args = parser.parse_args()
     main(args) 

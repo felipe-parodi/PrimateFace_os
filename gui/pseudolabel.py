@@ -483,21 +483,17 @@ def cmd_generate(args: argparse.Namespace) -> None:
 
 def cmd_refine(args: argparse.Namespace) -> None:
     """Execute refine command."""
-    try:
-        from gui.refinement.gui import launch_refinement_gui
-    except ImportError:
-        print("Error: Refinement GUI module not found.")
-        print("This feature is under development.")
-        sys.exit(1)
-    
-    launch_refinement_gui(
-        coco_path=args.coco,
-        images_dir=args.images,
-        output_path=args.output,
-        enable_keypoints=args.enable_keypoints,
-        enable_sam=args.enable_sam,
-        sam_checkpoint=args.sam_checkpoint
-    )
+    print("\n" + "="*60)
+    print("Interactive Refinement GUI - Coming Soon")
+    print("="*60)
+    print("\nThis feature is currently under development.")
+    print("\nIn the meantime, you can:")
+    print("  1. Use 'generate' command with manual review")
+    print("  2. Edit COCO JSON files directly")
+    print("  3. Use annotation tools like CVAT, Label Studio, or VGG VIA")
+    print("     that support COCO format import/export")
+    print("\nFor updates, check: https://github.com/PrimateFace/primateface_oss")
+    sys.exit(0)
 
 
 def cmd_detect(args: argparse.Namespace) -> None:
