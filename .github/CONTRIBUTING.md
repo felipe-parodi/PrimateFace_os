@@ -5,7 +5,7 @@ Thank you for your interest in contributing to PrimateFace! We welcome contribut
 ## Ways to Contribute
 
 ### 1. Report Issues
-- Use the [GitHub Issues](https://github.com/PrimateFace/primateface_oss/issues) page
+- Use the [GitHub Issues](https://github.com/KordingLab/PrimateFace/issues) page
 - Check if the issue already exists before creating a new one
 - Provide detailed information including:
   - Your environment (OS, Python version, package versions)
@@ -17,7 +17,7 @@ Thank you for your interest in contributing to PrimateFace! We welcome contribut
 
 #### Getting Started
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/primateface_oss.git`
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/PrimateFace.git`
 3. Create a new branch: `git checkout -b feature-name`
 4. Set up your development environment:
    ```bash
@@ -88,8 +88,8 @@ Please ensure:
 ### Environment Setup
 ```bash
 # Clone the repo
-git clone https://github.com/PrimateFace/primateface_oss.git
-cd primateface_oss
+git clone https://github.com/KordingLab/PrimateFace.git
+cd PrimateFace
 
 # Create conda environment
 conda create -n primateface-dev python=3.10
@@ -130,8 +130,8 @@ pytest --cov=primateface tests/
 ## Questions?
 
 - Email: primateface@gmail.com
-- GitHub Discussions: [Link](https://github.com/PrimateFace/primateface_oss/discussions)
-- Issues: [Link](https://github.com/PrimateFace/primateface_oss/issues)
+- GitHub Discussions: [Link](https://github.com/KordingLab/PrimateFace/discussions)
+- Issues: [Link](https://github.com/KordingLab/PrimateFace/issues)
 
 ## License
 
