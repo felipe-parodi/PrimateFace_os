@@ -492,7 +492,7 @@ def cmd_refine(args: argparse.Namespace) -> None:
     print("  2. Edit COCO JSON files directly")
     print("  3. Use annotation tools like CVAT, Label Studio, or VGG VIA")
     print("     that support COCO format import/export")
-    print("\nFor updates, check: https://github.com/PrimateFace/primateface_oss")
+    print("\nFor updates, check: https://github.com/KordingLab/PrimateFace")
     sys.exit(0)
 
 

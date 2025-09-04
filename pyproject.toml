@@ -123,10 +123,10 @@ all = [
 
 [project.urls]
 Homepage = "https://primateface.studio"
-Documentation = "https://primateface.studio/docs"
-Repository = "https://github.com/PrimateFace/primateface_oss"
-"Bug Reports" = "https://github.com/PrimateFace/primateface_oss/issues"
-Paper = "https://www.biorxiv.org/content/10.1101/2025.08.12.669927v1"
+Documentation = "https://docs.primateface.studio"
+Repository = "https://github.com/KordingLab/PrimateFace"
+"Bug Reports" = "https://github.com/KordingLab/PrimateFace/issues"
+Paper = "https://www.biorxiv.org/content/10.1101/2025.08.12.669927"
 "Hugging Face" = "https://huggingface.co/datasets/fparodi/PrimateFace"
 
 [tool.setuptools.packages.find]

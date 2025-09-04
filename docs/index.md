@@ -132,7 +132,7 @@ For pressing questions or collaborations, reach out via:
 
 If you use PrimateFace in your research, please cite:
 
-[Parodi et al., 2025](https://www.biorxiv.org/content/10.1101/2025.08.12.669927v2)
+[Parodi et al., 2025](https://www.biorxiv.org/content/10.1101/2025.08.12.669927)
 
 ```bibtex
 @article{parodi2025primateface,
