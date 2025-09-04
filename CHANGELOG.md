@@ -59,6 +59,6 @@ See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for information on how to contrib
 ## Links
 
 - [Documentation](https://primateface.studio)
-- [Paper](https://www.biorxiv.org/content/10.1101/2025.08.12.669927v2)
+- [Paper](https://www.biorxiv.org/content/10.1101/2025.08.12.669927)
 - [Dataset](https://huggingface.co/datasets/fparodi/PrimateFace)
-- [GitHub](https://github.com/PrimateFace/primateface_oss)
+- [GitHub](https://github.com/KordingLab/PrimateFace)

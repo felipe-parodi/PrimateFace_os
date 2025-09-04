@@ -3,7 +3,7 @@
 # **PrimateFace: A Machine Learning Resource for Automated Primate Face Analysis**
 
 <p align="center">
-  <a href="https://www.biorxiv.org/content/10.1101/2025.08.12.669927v2">
+  <a href="https://www.biorxiv.org/content/10.1101/2025.08.12.669927">
     <img src="https://img.shields.io/badge/Preprint-bioRxiv-orange" alt="bioRxiv">
   </a>
   &nbsp;&nbsp;
@@ -20,11 +20,11 @@
   </a>
 </p>
 
-PrimateFace contains data, models, and tutorials for analyzing facial behavior across primates ([Parodi et al., 2025](https://www.biorxiv.org/content/10.1101/2025.08.12.669927v2)). 
+PrimateFace contains data, models, and tutorials for analyzing facial behavior across primates ([Parodi et al., 2025](https://www.biorxiv.org/content/10.1101/2025.08.12.669927)). 
 
 This codebase enables you to use an off-the-shelf PrimateFace model for tracking facial movements or you can quickly fine-tune a PrimateFace model.
 
-Most of the PrimateFace modules require GPU access. If you don't have access to a GPU, you can still use PrimateFace in Google Colab (see [notebooks](https://docs.primateface.studio/notebooks/index.html)).
+Most of the PrimateFace modules require GPU access. If you don't have access to a GPU, you can still use PrimateFace in Google Colab (see [tutorials](https://docs.primateface.studio/tutorials/)).
 
 
 <p align="center">
@@ -35,7 +35,7 @@ Most of the PrimateFace modules require GPU access. If you don't have access to 
 #### **Quick Start**
 1. Test the [Hugging Face demo](https://huggingface.co/datasets/fparodi/PrimateFace) to get a feel for the capabilities of PrimateFace on your own data.
 
-2. Run through the [Google Colab Notebook tutorials](https://docs.primateface.studio/notebooks/index.html) to explore several applications of PrimateFace.
+2. Run through the [Google Colab Notebook tutorials](https://docs.primateface.studio/tutorials/) to explore several applications of PrimateFace.
 
 3. Clone this repository, install the dependencies, and run through the different modules (e.g., DINOv2, image and video demos, pseudo-labeling GUI, etc.) to fully utilize PrimateFace.
 
@@ -118,18 +118,16 @@ Note: You may see a harmless `RequestsDependencyWarning` about urllib3 versions 
 
 #### Links
 - [Documentation Homepage](https://docs.primateface.studio)
-- [Notebook Tutorials](https://docs.primateface.studio/notebooks/index.html)
-
-<!-- TODO: fix links for KordingLab -->
+- [Notebook Tutorials](https://docs.primateface.studio/tutorials/)
 
 | Tutorial | Open in Colab |
 |---------|----------------|
-| **1. Lemur Face Visibility Time-Stamping** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrimateFace/primateface_oss/blob/main/demos/notebooks/App1_Lemur_time_stamping.ipynb) |
-| **2. Rapid Macaque Face Recognition** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrimateFace/primateface_oss/blob/main/demos/notebooks/App2_Macaque_Face_Recognition.ipynb) |
-| **3. Howler Vocal-Motor Coupling** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrimateFace/primateface_oss/blob/main/demos/notebooks/App3_Howler_Vocal_Motor_Coupling.ipynb) |
-| **4. Human Infant Social Gaze Tracking** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrimateFace/primateface_oss/blob/main/demos/notebooks/App4_Gaze_following.ipynb) |
-| **5. Data-Driven Discovery of Facial Actions** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrimateFace/primateface_oss/blob/main/demos/notebooks/App5_Data_Driven_Discovery_of_Facial_Actions.ipynb) |
-| **6. Cross-Subject Neural Decoding of Facial Actions** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrimateFace/primateface_oss/blob/main/demos/notebooks/App6_Cross_Subject_Neural_Decoding_of_Facial_Actions.ipynb) |
+| **1. Lemur Face Visibility Time-Stamping** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App1_Lemur_time_stamping.ipynb) |
+| **2. Rapid Macaque Face Recognition** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App2_Macaque_Face_Recognition.ipynb) |
+| **4. Human Infant Social Gaze Tracking** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App4_Gaze_following.ipynb) |
+| **3. Howler Vocal-Motor Coupling** | Coming soon |
+| **5. Data-Driven Discovery of Facial Actions** | Coming soon |
+| **6. Cross-Subject Neural Decoding of Facial Actions** | Coming soon |
 
 
 #### References
