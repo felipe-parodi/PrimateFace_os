@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/badge/📖-Documentation-blue" alt="Documentation">
   </a>
     &nbsp;&nbsp;
-  <a href="https://huggingface.co/datasets/fparodi/PrimateFace">
+  <a href="https://huggingface.co/spaces/fparodi/PrimateFace">
     <img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue" alt="Hugging Face Spaces">
   </a>
 </p>
