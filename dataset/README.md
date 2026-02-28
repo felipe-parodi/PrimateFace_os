@@ -5,24 +5,32 @@ The PrimateFace dataset contains facial images and annotations for various prima
 
 ## Dataset Access
 
-### Current Status
-The full PrimateFace dataset will be released in **September 2025** on Hugging Face.
+The PrimateFace dataset is available on Hugging Face (gated access):
+[https://huggingface.co/datasets/fparodi/PrimateFace](https://huggingface.co/datasets/fparodi/PrimateFace)
 
-**Coming Soon:** [https://huggingface.co/datasets/fparodi/PrimateFace](https://huggingface.co/datasets/fparodi/PrimateFace)
+### Available Configs
 
-### What's Available Now
+| Config | Keypoints | Description |
+|--------|-----------|-------------|
+| `mac-au-68kpt` | 68 (dlib/COCO) | Cayo Santiago action-unit videos, COCO Whole-Body face landmarks |
+| `mac-au-48kpt` | 48 (PrimateFace) | Cayo Santiago action-unit videos, PrimateFace custom landmarks |
+
+Both configs contain the same images annotated with different landmark sets.
+
+```python
+from datasets import load_dataset
+
+# Load 68-keypoint annotations (dlib/COCO convention)
+ds_68 = load_dataset("fparodi/PrimateFace", "mac-au-68kpt")
+
+# Load 48-keypoint annotations (PrimateFace convention)
+ds_48 = load_dataset("fparodi/PrimateFace", "mac-au-48kpt")
+```
+
+### Also Available
 - Pre-trained models: Available via `demos/download_models.py`
 - Sample images: Included in `demos/` for testing
-- Annotation format: COCO JSON with 68-point landmarks
 - Documentation: Complete API and format specifications
-
-### Dataset Preview
-The complete dataset will include:
-- **10,000+ annotated images** across 15+ primate species
-- **68-point facial landmarks** for each face
-- **Species labels** and metadata
-- **Train/validation/test splits** for reproducible research
-- **Diverse conditions**: Multiple poses, expressions, and environments
 
 ## Data Usage and Licensing
 
