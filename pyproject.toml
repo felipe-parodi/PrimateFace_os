@@ -81,6 +81,13 @@ dinov2 = [
 #     "sleap-io>=0.0.13",
 # ]
 
+# Framework interop (SLEAP, NWB, DLC import)
+interop = [
+    "sleap-io>=0.2.0",
+    "pynwb>=2.0.0",
+    "ndx-pose>=0.2.0",
+]
+
 # Landmark converter (optional GNN support)
 landmark_gnn = [
     "torch-geometric>=2.0.0",
