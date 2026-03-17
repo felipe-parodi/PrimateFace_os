@@ -203,3 +203,51 @@ def init_models(
         pose_model = init_pose_estimator(pose_config, pose_checkpoint, device=device)
 
     return detector, pose_model
+
+
+def setup_publication_style() -> None:
+    """Configure matplotlib for Nature-style publication figures.
+
+    Sets large bold labels, minimal spines, colorblind-friendly defaults,
+    and 300 dpi output.  Call once at the top of a notebook.
+    """
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update({
+        "font.family": "sans-serif",
+        "font.size": 12,
+        "axes.labelsize": 14,
+        "axes.labelweight": "bold",
+        "axes.titlesize": 14,
+        "axes.titleweight": "bold",
+        "xtick.labelsize": 11,
+        "ytick.labelsize": 11,
+        "legend.fontsize": 11,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "figure.dpi": 150,
+        "savefig.dpi": 300,
+        "savefig.bbox": "tight",
+        "axes.prop_cycle": plt.cycler(color=[
+            "#0072B2", "#D55E00", "#009E73", "#CC79A7",
+            "#F0E442", "#56B4E9", "#E69F00", "#000000",
+        ]),
+    })
+    print("Publication plot style configured (Nature-style).")
+
+
+def save_fig(fig, name: str, out_dir: str = "figures", dpi: int = 300) -> None:
+    """Save figure as PNG, SVG, and PDF.
+
+    Args:
+        fig: Matplotlib figure.
+        name: Base filename (no extension).
+        out_dir: Output directory.
+        dpi: Resolution for PNG.
+    """
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out / f"{name}.png", dpi=dpi, bbox_inches="tight")
+    fig.savefig(out / f"{name}.svg", bbox_inches="tight")
+    fig.savefig(out / f"{name}.pdf", bbox_inches="tight")
+    print(f"Figure saved: {out / name} (.png/.svg/.pdf)")
