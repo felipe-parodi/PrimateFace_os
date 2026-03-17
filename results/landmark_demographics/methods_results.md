@@ -1,7 +1,7 @@
 # Landmark-Based Demographic Estimation in Primates
 
 **Status**: Pre-results (methods finalized, awaiting landmark extraction completion)
-**Notebook**: `demos/notebooks/Landmark_Demographics.ipynb`
+**Notebook**: `demos/notebooks/landmark_demographics.ipynb`
 **Target**: Supplementary figure in PrimateFace paper
 
 ---

@@ -124,14 +124,13 @@ Note: You may see a harmless `RequestsDependencyWarning` about urllib3 versions 
 - [Documentation Homepage](https://docs.primateface.studio)
 - [Notebook Tutorials](https://docs.primateface.studio/tutorials/)
 
-| Tutorial | Open in Colab |
-|---------|----------------|
-| **1. Lemur Face Visibility Time-Stamping** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App1_Lemur_time_stamping.ipynb) |
-| **2. Rapid Macaque Face Recognition** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App2_Macaque_Face_Recognition.ipynb) |
-| **4. Human Infant Social Gaze Tracking** | [![Open](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App4_Gaze_following.ipynb) |
-| **3. Howler Vocal-Motor Coupling** | Coming soon |
-| **5. Data-Driven Discovery of Facial Actions** | Coming soon |
-| **6. Cross-Subject Neural Decoding of Facial Actions** | Coming soon |
+| Tutorial | Description |
+|----------|-------------|
+| [`lemur_video_timestamping`](demos/notebooks/lemur_video_timestamping.ipynb) | Detect and timestamp primate faces in video |
+| [`macaque_face_recognition`](demos/notebooks/macaque_face_recognition.ipynb) | Closed-set face recognition with ArcFace embeddings |
+| [`howler_vocal_motor_coupling`](demos/notebooks/howler_vocal_motor_coupling.ipynb) | Correlate facial kinematics with vocalizations |
+| [`macaque_gaze_following`](demos/notebooks/macaque_gaze_following.ipynb) | Gaze-following heuristic with Gazelle |
+| [`landmark_demographics`](demos/notebooks/landmark_demographics.ipynb) | Predict age and sex from facial landmarks |
 
 
 #### References

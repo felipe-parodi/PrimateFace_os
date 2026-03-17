@@ -42,15 +42,17 @@ pip install -e .
 jupyter notebook demos/notebooks/
 ```
 
-### Google Colab
+### Notebooks
 
-Each tutorial is available on Google Colab for easy access without local setup:
+Run locally with auto-downloading models from [HuggingFace](https://huggingface.co/fparodi/primateface-models):
 
-| Tutorial | Colab Link |
-|----------|------------|
-| Lemur Time-Stamping | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App1_Lemur_time_stamping.ipynb) |
-| Macaque Recognition | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App2_Macaque_Face_Recognition.ipynb) |
-| Gaze Following | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KordingLab/PrimateFace/blob/main/demos/notebooks/App4_Gaze_following.ipynb) |
+| Tutorial | Notebook |
+|----------|----------|
+| Lemur Video Timestamping | [`lemur_video_timestamping.ipynb`](../notebooks/lemur_video_timestamping.ipynb) |
+| Macaque Face Recognition | [`macaque_face_recognition.ipynb`](../notebooks/macaque_face_recognition.ipynb) |
+| Howler Vocal-Motor Coupling | [`howler_vocal_motor_coupling.ipynb`](../notebooks/howler_vocal_motor_coupling.ipynb) |
+| Macaque Gaze Following | [`macaque_gaze_following.ipynb`](../notebooks/macaque_gaze_following.ipynb) |
+| Landmark Demographics | [`landmark_demographics.ipynb`](../notebooks/landmark_demographics.ipynb) |
 
 ## Framework-Specific Examples
 
