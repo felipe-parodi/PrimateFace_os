@@ -179,3 +179,27 @@ def download_demo_asset(
     url = f"https://drive.google.com/uc?id={gdrive_id}"
     gdown.download(url, str(output_path), quiet=False)
     return output_path
+
+
+def init_models(
+    det_config: str,
+    det_checkpoint: str,
+    pose_config: Optional[str] = None,
+    pose_checkpoint: Optional[str] = None,
+    device: str = "cuda:0",
+):
+    """Initialise MMDetection (and optionally MMPose) models."""
+    from mmdet.apis import init_detector
+    from mmpose.utils import adapt_mmdet_pipeline
+
+    print("Loading MMDetection model...")
+    detector = init_detector(det_config, det_checkpoint, device=device)
+    detector.cfg = adapt_mmdet_pipeline(detector.cfg)
+
+    pose_model = None
+    if pose_config and pose_checkpoint:
+        from mmpose.apis import init_model as init_pose_estimator
+        print("Loading MMPose model...")
+        pose_model = init_pose_estimator(pose_config, pose_checkpoint, device=device)
+
+    return detector, pose_model
