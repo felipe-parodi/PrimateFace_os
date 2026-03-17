@@ -104,16 +104,31 @@ def align_face(
     image_bgr: np.ndarray,
     landmarks_68: np.ndarray,
     output_size: int = ALIGNED_FACE_SIZE,
+    target_landmarks: Optional[np.ndarray] = None,
 ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
-    """Warp a face to canonical 256x256 aligned space using 5-point alignment."""
+    """Warp a face to canonical aligned space using 5-point alignment.
+
+    Args:
+        image_bgr: Input image in BGR format.
+        landmarks_68: Array of shape (68, 2) or (68, 3).
+        output_size: Size of the square output image (default 256).
+        target_landmarks: Target 5-point landmarks for alignment.
+            Defaults to TARGET_LANDMARKS_5PT_256X256. Use
+            TARGET_LANDMARKS_5PT_112X112 for ArcFace-compatible output.
+
+    Returns:
+        Tuple of (aligned_image, affine_matrix) or (None, None) on failure.
+    """
+    if target_landmarks is None:
+        target_landmarks = TARGET_LANDMARKS_5PT_256X256
     src_5pts = get_5_source_landmarks_from_68(landmarks_68)
     if np.any(np.isnan(src_5pts)):
         return None, None
     matrix, _ = cv2.estimateAffinePartial2D(
-        src_5pts, TARGET_LANDMARKS_5PT_256X256, method=cv2.LMEDS
+        src_5pts, target_landmarks, method=cv2.LMEDS
     )
     if matrix is None:
-        matrix, _ = cv2.estimateAffine2D(src_5pts, TARGET_LANDMARKS_5PT_256X256)
+        matrix, _ = cv2.estimateAffine2D(src_5pts, target_landmarks)
     if matrix is None:
         return None, None
     aligned = cv2.warpAffine(image_bgr, matrix, (output_size, output_size), borderValue=(0, 0, 0))
