@@ -156,3 +156,82 @@ class TestFaceAnalysisProperties:
         kin1 = face.kinematics
         kin2 = face.kinematics
         assert kin1 is kin2
+
+
+class TestFaceEmbedding:
+    """Test face embedding and verify."""
+
+    def test_embedding_raises_without_model(
+        self, synthetic_keypoints_68x3, dummy_image, sample_bbox
+    ):
+        """Embedding should raise if no model configured."""
+        face = Face(
+            bbox=sample_bbox,
+            score=0.95,
+            keypoints=synthetic_keypoints_68x3,
+            _image=dummy_image,
+            _image_size=(200, 200),
+        )
+        with pytest.raises(RuntimeError, match="No embedding model"):
+            _ = face.embedding
+
+    def test_embedding_with_mock_fn(
+        self, synthetic_keypoints_68x3, dummy_image, sample_bbox
+    ):
+        """Embedding should work when _embedding_fn is provided."""
+        import numpy as np
+
+        fake_embedding = np.random.randn(512).astype(np.float32)
+        face = Face(
+            bbox=sample_bbox,
+            score=0.95,
+            keypoints=synthetic_keypoints_68x3,
+            _image=dummy_image,
+            _image_size=(200, 200),
+            _embedding_fn=lambda crop: fake_embedding,
+        )
+        emb = face.embedding
+        assert emb.shape == (512,)
+        np.testing.assert_array_equal(emb, fake_embedding)
+
+    def test_verify_same_face(
+        self, synthetic_keypoints_68x3, dummy_image, sample_bbox
+    ):
+        """Verifying a face against itself should return True."""
+        import numpy as np
+
+        fake_emb = np.random.randn(512).astype(np.float32)
+        face = Face(
+            bbox=sample_bbox,
+            score=0.95,
+            keypoints=synthetic_keypoints_68x3,
+            _image=dummy_image,
+            _image_size=(200, 200),
+            _embedding_fn=lambda crop: fake_emb,
+        )
+        is_same, distance = face.verify(face)
+        assert is_same is True
+        assert distance < 0.01
+
+    def test_verify_different_faces(
+        self, synthetic_keypoints_68x3, dummy_image, sample_bbox
+    ):
+        """Verifying different embeddings should return larger distance."""
+        import numpy as np
+
+        emb1 = np.array([1.0, 0.0, 0.0] + [0.0] * 509, dtype=np.float32)
+        emb2 = np.array([0.0, 1.0, 0.0] + [0.0] * 509, dtype=np.float32)
+
+        face1 = Face(
+            bbox=sample_bbox, score=0.9, keypoints=synthetic_keypoints_68x3,
+            _image=dummy_image, _image_size=(200, 200),
+            _embedding_fn=lambda crop: emb1,
+        )
+        face2 = Face(
+            bbox=sample_bbox, score=0.9, keypoints=synthetic_keypoints_68x3,
+            _image=dummy_image, _image_size=(200, 200),
+            _embedding_fn=lambda crop: emb2,
+        )
+        is_same, distance = face1.verify(face2)
+        assert is_same is False
+        assert distance > 0.5

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import functools
 from dataclasses import dataclass, field
-from typing import Any, Dict, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -34,6 +34,9 @@ class Face:
     keypoints: np.ndarray
     _image: np.ndarray = field(repr=False, compare=False)
     _image_size: Tuple[int, int] = field(repr=False, compare=False)
+    _embedding_fn: Optional[Callable[[np.ndarray], np.ndarray]] = field(
+        repr=False, compare=False, default=None
+    )
 
     # -- Eager convenience properties --
 
@@ -110,6 +113,49 @@ class Face:
     def interocular_distance(self) -> float:
         """Distance between eye centers in pixels."""
         return self.kinematics["interocular_distance"]
+
+    # -- Embedding / re-identification --
+
+    @functools.cached_property
+    def embedding(self) -> np.ndarray:
+        """Face embedding vector for re-identification.
+
+        Requires ``PrimateFace(embedding_model='arcface')`` or
+        ``embedding_model='megadescriptor'`` to be set at init time.
+
+        Returns:
+            1-D numpy array (512-d for ArcFace, 1536-d for MegaDescriptor).
+
+        Raises:
+            RuntimeError: If no embedding model was configured.
+        """
+        if self._embedding_fn is None:
+            raise RuntimeError(
+                "No embedding model loaded. Initialize with: "
+                "PrimateFace(embedding_model='arcface')"
+            )
+        return self._embedding_fn(self.crop)
+
+    def verify(
+        self, other: "Face", threshold: float = 0.4
+    ) -> Tuple[bool, float]:
+        """Compare this face to another for identity verification.
+
+        Uses cosine distance between embeddings.
+
+        Args:
+            other: Another Face object to compare against.
+            threshold: Maximum cosine distance to consider same identity.
+                Default 0.4 works well for ArcFace.
+
+        Returns:
+            Tuple of ``(is_same_person, cosine_distance)``.
+        """
+        e1 = self.embedding
+        e2 = other.embedding
+        cos_sim = float(np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2) + 1e-8))
+        distance = 1.0 - cos_sim
+        return distance < threshold, distance
 
     # -- Serialization --
 

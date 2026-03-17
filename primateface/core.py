@@ -7,13 +7,14 @@ for primate face detection, landmark estimation, and analysis.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Optional, Sequence, Union
+from typing import Callable, List, Optional, Sequence, Union
 
 import cv2
 import numpy as np
 
 from .face import Face
 from ._model_manager import ModelManager, POSE_MODEL_VARIANTS
+from ._embedding import EMBEDDING_BACKENDS
 
 InputType = Union[str, Path, np.ndarray]
 
@@ -36,6 +37,10 @@ class PrimateFace:
             available, else ``"cpu"``.
         pose_model: Pose estimation backend. ``"hrnet"`` (default,
             38 MB) or ``"vitpose"`` (1.2 GB, more accurate).
+        embedding_model: Face embedding backend for re-identification.
+            ``None`` (default, no embedding), ``"arcface"`` (512-d,
+            requires insightface), or ``"megadescriptor"`` (1536-d,
+            requires timm).
         det_threshold: Detection confidence threshold.
         nms_threshold: NMS threshold for overlapping detections.
         model_dir: Directory to cache model files. If *None*, uses
@@ -46,6 +51,7 @@ class PrimateFace:
         self,
         device: Optional[str] = None,
         pose_model: str = "hrnet",
+        embedding_model: Optional[str] = None,
         det_threshold: float = 0.5,
         nms_threshold: float = 0.3,
         model_dir: Optional[Union[str, Path]] = None,
@@ -56,6 +62,7 @@ class PrimateFace:
             device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.pose_model = pose_model
+        self.embedding_model = embedding_model
         self.det_threshold = det_threshold
         self.nms_threshold = nms_threshold
 
@@ -65,6 +72,16 @@ class PrimateFace:
                 f"Unknown pose_model={pose_model!r}. "
                 f"Choose from: {list(POSE_MODEL_VARIANTS.keys())}"
             )
+
+        # Validate and load embedding model
+        self._embedding_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None
+        if embedding_model is not None:
+            if embedding_model not in EMBEDDING_BACKENDS:
+                raise ValueError(
+                    f"Unknown embedding_model={embedding_model!r}. "
+                    f"Choose from: {list(EMBEDDING_BACKENDS.keys())}"
+                )
+            _, self._embedding_fn = EMBEDDING_BACKENDS[embedding_model](device)
 
         # Resolve model paths (downloads from HF if needed)
         pose_variant = POSE_MODEL_VARIANTS[pose_model]
@@ -138,6 +155,7 @@ class PrimateFace:
                 keypoints=kpts_with_vis,
                 _image=bgr,
                 _image_size=image_size,
+                _embedding_fn=self._embedding_fn,
             )
             faces.append(face)
 
@@ -168,6 +186,7 @@ class PrimateFace:
         draw_keypoints: bool = True,
         draw_skeleton: bool = True,
         draw_bbox: bool = True,
+        show_pose: bool = False,
     ) -> np.ndarray:
         """Draw detected faces on an image.
 
@@ -178,6 +197,7 @@ class PrimateFace:
             draw_keypoints: Draw landmark points.
             draw_skeleton: Draw skeleton connections.
             draw_bbox: Draw bounding boxes.
+            show_pose: Draw 3D head pose axes (RGB = XYZ = yaw/pitch/roll).
 
         Returns:
             BGR numpy array with faces drawn.
@@ -224,6 +244,9 @@ class PrimateFace:
                             p1 = (int(kpts[j, 0]), int(kpts[j, 1]))
                             p2 = (int(kpts[j + 1, 0]), int(kpts[j + 1, 1]))
                             cv2.line(canvas, p1, p2, (255, 200, 0), 1)
+
+            if show_pose:
+                _draw_pose_axes(canvas, face.keypoints, face._image_size)
 
         if output is not None:
             cv2.imwrite(str(output), canvas)
@@ -280,3 +303,61 @@ class PrimateFace:
             f"Unsupported image type: {type(image)}. "
             "Expected str, Path, numpy array, or PIL Image."
         )
+
+
+def _draw_pose_axes(
+    canvas: np.ndarray,
+    keypoints: np.ndarray,
+    image_size: tuple,
+    axis_length: float = 50.0,
+) -> None:
+    """Draw 3D head pose axes on the canvas.
+
+    Draws RGB arrows (Red=X, Green=Y, Blue=Z) from the nose tip
+    showing the estimated head orientation.
+
+    Args:
+        canvas: BGR image to draw on (modified in place).
+        keypoints: Shape (68, 3) with [x, y, score].
+        image_size: (width, height) of the image.
+        axis_length: Length of the axis arrows in pixels.
+    """
+    from analysis.constants import POSE_LANDMARK_INDICES, POSE_REFERENCE_3D
+
+    coords = keypoints[:, :2].astype(np.float64)
+    image_points = coords[POSE_LANDMARK_INDICES]
+
+    w, h = image_size
+    focal_length = float(w)
+    cx, cy = w / 2.0, h / 2.0
+    camera_matrix = np.array(
+        [[focal_length, 0, cx], [0, focal_length, cy], [0, 0, 1]],
+        dtype=np.float64,
+    )
+    dist_coeffs = np.zeros((4, 1), dtype=np.float64)
+
+    success, rvec, tvec = cv2.solvePnP(
+        POSE_REFERENCE_3D, image_points,
+        camera_matrix, dist_coeffs,
+        flags=cv2.SOLVEPNP_ITERATIVE,
+    )
+    if not success:
+        return
+
+    # Project 3D axis endpoints to 2D
+    axis_3d = np.float64([
+        [axis_length, 0, 0],   # X axis (red)
+        [0, axis_length, 0],   # Y axis (green)
+        [0, 0, axis_length],   # Z axis (blue)
+    ])
+    origin_3d = np.float64([[0, 0, 0]])
+
+    axis_2d, _ = cv2.projectPoints(axis_3d, rvec, tvec, camera_matrix, dist_coeffs)
+    origin_2d, _ = cv2.projectPoints(origin_3d, rvec, tvec, camera_matrix, dist_coeffs)
+
+    origin = tuple(origin_2d[0].ravel().astype(int))
+    colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]  # BGR: red, green, blue
+
+    for i, color in enumerate(colors):
+        endpoint = tuple(axis_2d[i].ravel().astype(int))
+        cv2.arrowedLine(canvas, origin, endpoint, color, 2, tipLength=0.2)
