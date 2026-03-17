@@ -154,14 +154,19 @@ pytest test_demos.py
 
 ```
 demos/
-├── primateface_demo.py      # Main CLI interface
-├── process.py               # Core processing pipeline
-├── model_registry.py        # HuggingFace model metadata
-├── download_models.py       # Model download CLI
-├── classify_genus.py        # Species classification
-├── viz_utils.py             # Visualization utilities
-├── smooth_utils.py          # Temporal smoothing
-├── demo_docs.md             # Technical documentation
+├── primateface_demo.py      # Demo CLI (low-level, manual config paths)
+├── download_models.py       # Model download from HuggingFace
+├── classify_genus.py        # Species classification via VLM
 ├── test_demos.py            # Unit tests
-└── notebooks/               # Interactive tutorials
+└── notebooks/               # 7 interactive tutorial notebooks
+    ├── quickstart.ipynb
+    ├── lemur_video_timestamping.ipynb
+    ├── macaque_face_recognition.ipynb
+    ├── howler_vocal_motor_coupling.ipynb
+    ├── macaque_gaze_following.ipynb
+    ├── landmark_demographics.ipynb
+    └── facial_action_discovery.ipynb
 ```
+
+**Note:** Core modules (processor, model registry, constants, viz, smoothing) have moved
+to the `primateface/` package. Backward-compatible imports from `demos` still work.

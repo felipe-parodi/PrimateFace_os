@@ -48,17 +48,18 @@ Most of the PrimateFace modules require GPU access. If you don't have access to 
 This repository contains the code for PrimateFace, an ecosystem for facilitating cross-species primate face analysis.
 
 ```
-|--- dataset            # Explore PrimateFace data
-|--- demos              # Test models on your own data
-   |--- notebooks       # Google Colab notebooks for tutorials
-|--- dinov2             # Run and visualize DINOv2 features
-|--- docs               # Documentation for PrimateFace
-|--- evals              # Evaluate models across frameworks & datasets
-|--- gui                # Run pseudo-labeling GUI on your own data
-|--- landmark-converter # Train & apply keypoint landmark converters (68 -> 48 kpts)
-|--- pyproject.toml
-|--- README.md
-|--- environment.yml    # Unified conda environment for modules
+|--- primateface        # Core library (pip install primateface)
+   |--- analysis        #   Facial analysis (kinematics, symmetry, head pose, quality)
+   |--- io.py           #   Export to CSV, COCO, DLC, SLEAP, NWB
+   |--- cli.py          #   CLI: primateface analyze, primateface models
+|--- demos              # Demo scripts and tutorial notebooks
+   |--- notebooks       #   7 Jupyter notebooks (Quick Start, face rec, etc.)
+|--- dinov2             # DINOv2 feature extraction and visualization
+|--- docs               # Documentation
+|--- evals              # Model evaluation across frameworks & datasets
+|--- gui                # Pseudo-labeling GUI
+|--- landmark-converter # Keypoint landmark converters (68 <-> 48 kpts)
+|--- tests              # Unit tests (121 passing)
 ```
 
 
@@ -126,11 +127,13 @@ Note: You may see a harmless `RequestsDependencyWarning` about urllib3 versions 
 
 | Tutorial | Description |
 |----------|-------------|
+| [`quickstart`](demos/notebooks/quickstart.ipynb) | **Start here** — 3-line API, Face object, visualization, export |
 | [`lemur_video_timestamping`](demos/notebooks/lemur_video_timestamping.ipynb) | Detect and timestamp primate faces in video |
-| [`macaque_face_recognition`](demos/notebooks/macaque_face_recognition.ipynb) | Closed-set face recognition with ArcFace embeddings |
+| [`macaque_face_recognition`](demos/notebooks/macaque_face_recognition.ipynb) | Face recognition: ArcFace vs MegaDescriptor vs DINOv2 |
 | [`howler_vocal_motor_coupling`](demos/notebooks/howler_vocal_motor_coupling.ipynb) | Correlate facial kinematics with vocalizations |
 | [`macaque_gaze_following`](demos/notebooks/macaque_gaze_following.ipynb) | Gaze-following heuristic with Gazelle |
 | [`landmark_demographics`](demos/notebooks/landmark_demographics.ipynb) | Predict age and sex from facial landmarks |
+| [`facial_action_discovery`](demos/notebooks/facial_action_discovery.ipynb) | Unsupervised facial action discovery (MotionMapper-inspired) |
 
 
 #### References
