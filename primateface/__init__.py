@@ -10,6 +10,7 @@ Example:
 
 from .core import PrimateFace
 from .face import Face
+from . import io
 
 __version__ = "0.2.0"
-__all__ = ["PrimateFace", "Face", "__version__"]
+__all__ = ["PrimateFace", "Face", "io", "__version__"]
