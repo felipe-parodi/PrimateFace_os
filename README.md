@@ -18,6 +18,10 @@
   <a href="https://huggingface.co/datasets/fparodi/PrimateFace">
     <img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Dataset-blue" alt="Hugging Face Dataset">
   </a>
+  &nbsp;&nbsp;
+  <a href="https://huggingface.co/fparodi/primateface-models">
+    <img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Models-blue" alt="Hugging Face Models">
+  </a>
 </p>
 
 PrimateFace contains data, models, and tutorials for analyzing facial behavior across primates ([Parodi et al., 2025](https://www.biorxiv.org/content/10.1101/2025.08.12.669927)). 
@@ -37,7 +41,7 @@ Most of the PrimateFace modules require GPU access. If you don't have access to 
 
 2. Run through the [Google Colab Notebook tutorials](https://docs.primateface.studio/tutorials/) to explore several applications of PrimateFace.
 
-3. Clone this repository, install the dependencies, and run through the different modules (e.g., DINOv2, image and video demos, pseudo-labeling GUI, etc.) to fully utilize PrimateFace.
+3. Clone this repository, install the dependencies, download the pretrained models (`python demos/download_models.py`), and run through the different modules (e.g., DINOv2, image and video demos, pseudo-labeling GUI, etc.) to fully utilize PrimateFace.
 
 
 #### Structure

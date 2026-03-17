@@ -42,6 +42,7 @@ dependencies = [
     "json-tricks>=3.15.0",
     "natsort>=7.0.0",
     "pycocotools>=2.0.0",
+    "huggingface-hub>=0.20.0",
 ]
 
 [project.optional-dependencies]
@@ -101,7 +102,7 @@ dev = [
     "mypy>=0.900",
     "jupyter>=1.0.0",
     "ipykernel>=6.0.0",
-    "gdown>=4.0.0",  # For downloading models from Google Drive
+    "gdown>=4.0.0",  # Legacy: for downloading demo assets from Google Drive
 ]
 
 # Complete installation (excludes framework-specific: mmlab, dlc, sleap)
@@ -127,7 +128,8 @@ Documentation = "https://docs.primateface.studio"
 Repository = "https://github.com/KordingLab/PrimateFace"
 "Bug Reports" = "https://github.com/KordingLab/PrimateFace/issues"
 Paper = "https://www.biorxiv.org/content/10.1101/2025.08.12.669927"
-"Hugging Face" = "https://huggingface.co/datasets/fparodi/PrimateFace"
+"Hugging Face Dataset" = "https://huggingface.co/datasets/fparodi/PrimateFace"
+"Hugging Face Models" = "https://huggingface.co/fparodi/primateface-models"
 
 [tool.setuptools.packages.find]
 where = ["."]
