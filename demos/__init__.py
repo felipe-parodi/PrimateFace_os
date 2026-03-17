@@ -1,13 +1,10 @@
 """PrimateFace demonstration and example scripts.
 
-This package contains demo scripts and utilities for PrimateFace:
-- Unified processing for videos and images
-- Primate genus classification 
-- COCO annotation visualization
-- Utility modules for smoothing and visualization
+Backward compatibility: core modules have moved to the ``primateface``
+package. This shim re-exports them so existing code continues to work.
 """
 
-from .constants import (
+from primateface._constants import (
     DEFAULT_BBOX_THR,
     DEFAULT_KPT_THR,
     DEFAULT_NMS_THR,
@@ -15,29 +12,25 @@ from .constants import (
     PRIMATE_GENERA,
     VIDEO_EXTENSIONS,
 )
-from .model_registry import (
+from primateface._model_registry import (
     HF_REPO_ID,
     MODEL_ENTRIES,
     MODELS,
 )
-from .process import PrimateFaceProcessor
-from .smooth_utils import MedianSavgolSmoother
-from .viz_utils import FastPoseVisualizer
+from primateface._processor import PrimateFaceProcessor
+from primateface._smooth import MedianSavgolSmoother
+from primateface._viz import FastPoseVisualizer
 
 __all__ = [
-    # Main processor
     'PrimateFaceProcessor',
-    # Utilities
     'MedianSavgolSmoother',
     'FastPoseVisualizer',
-    # Constants
     'DEFAULT_BBOX_THR',
     'DEFAULT_KPT_THR',
     'DEFAULT_NMS_THR',
     'IMAGE_EXTENSIONS',
     'VIDEO_EXTENSIONS',
     'PRIMATE_GENERA',
-    # Model registry
     'HF_REPO_ID',
     'MODEL_ENTRIES',
     'MODELS',

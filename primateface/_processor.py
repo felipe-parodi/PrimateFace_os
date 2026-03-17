@@ -42,40 +42,22 @@ from mmpose.structures import merge_data_samples
 from mmpose.utils import adapt_mmdet_pipeline
 from tqdm import tqdm
 
-try:
-    from .constants import (
-        ALIGNED_FACE_SIZE,
-        DEFAULT_BBOX_THR,
-        DEFAULT_KPT_THR,
-        DEFAULT_NMS_THR,
-        DEFAULT_MEDIAN_WINDOW,
-        DEFAULT_SAVGOL_ORDER,
-        DEFAULT_SAVGOL_WINDOW,
-        DET_CAT_ID,
-        IMAGE_EXTENSIONS,
-        LANDMARK_5PT_FROM_68_INDICES,
-        TARGET_LANDMARKS_5PT_256X256,
-        VIDEO_EXTENSIONS,
-    )
-    from .smooth_utils import MedianSavgolSmoother
-    from .viz_utils import FastPoseVisualizer
-except ImportError:
-    from constants import (
-        ALIGNED_FACE_SIZE,
-        DEFAULT_BBOX_THR,
-        DEFAULT_KPT_THR,
-        DEFAULT_NMS_THR,
-        DEFAULT_MEDIAN_WINDOW,
-        DEFAULT_SAVGOL_ORDER,
-        DEFAULT_SAVGOL_WINDOW,
-        DET_CAT_ID,
-        IMAGE_EXTENSIONS,
-        LANDMARK_5PT_FROM_68_INDICES,
-        TARGET_LANDMARKS_5PT_256X256,
-        VIDEO_EXTENSIONS,
-    )
-    from smooth_utils import MedianSavgolSmoother
-    from viz_utils import FastPoseVisualizer
+from ._constants import (
+    ALIGNED_FACE_SIZE,
+    DEFAULT_BBOX_THR,
+    DEFAULT_KPT_THR,
+    DEFAULT_NMS_THR,
+    DEFAULT_MEDIAN_WINDOW,
+    DEFAULT_SAVGOL_ORDER,
+    DEFAULT_SAVGOL_WINDOW,
+    DET_CAT_ID,
+    IMAGE_EXTENSIONS,
+    LANDMARK_5PT_FROM_68_INDICES,
+    TARGET_LANDMARKS_5PT_256X256,
+    VIDEO_EXTENSIONS,
+)
+from ._smooth import MedianSavgolSmoother
+from ._viz import FastPoseVisualizer
 
 
 def get_5_source_landmarks_from_68(landmarks_68: np.ndarray) -> np.ndarray:

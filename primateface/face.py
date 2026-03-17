@@ -54,35 +54,35 @@ class Face:
     @functools.cached_property
     def head_pose(self) -> Tuple[float, float, float]:
         """Head pose as ``(yaw, pitch, roll)`` in degrees."""
-        from analysis.head_pose import estimate_head_pose
+        from .analysis.head_pose import estimate_head_pose
 
         return estimate_head_pose(self.keypoints, self._image_size)
 
     @functools.cached_property
     def quality(self) -> Dict[str, float]:
         """Face quality metrics: blur, size, visibility, brightness, score."""
-        from analysis.quality import face_quality
+        from .analysis.quality import face_quality
 
         return face_quality(self._image, self.bbox, self.keypoints)
 
     @functools.cached_property
     def symmetry(self) -> float:
         """Fluctuating asymmetry score (0 = perfect symmetry)."""
-        from analysis.symmetry import facial_symmetry
+        from .analysis.symmetry import facial_symmetry
 
         return facial_symmetry(self.keypoints)
 
     @functools.cached_property
     def region_symmetry(self) -> Dict[str, float]:
         """Per-region symmetry: jaw, eyebrows, eyes, nose, mouth."""
-        from analysis.symmetry import per_region_symmetry
+        from .analysis.symmetry import per_region_symmetry
 
         return per_region_symmetry(self.keypoints)
 
     @functools.cached_property
     def kinematics(self) -> Dict[str, float]:
         """All scalar kinematic/geometric features (~14 keys)."""
-        from analysis.kinematics import extract_kinematics
+        from .analysis.kinematics import extract_kinematics
 
         return extract_kinematics(self.keypoints)
 

@@ -154,7 +154,7 @@ Paper = "https://www.biorxiv.org/content/10.1101/2025.08.12.669927"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["primateface*", "analysis*", "dataset*", "demos*", "dinov2*", "evals*", "gui*", "landmark_converter*"]
+include = ["primateface*", "analysis*", "demos*", "dinov2*", "evals*", "gui*", "landmark_converter*"]
 exclude = ["tests*", "docs*", "notebooks*"]
 
 [tool.setuptools.package-data]

@@ -14,9 +14,9 @@ import numpy as np
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from demos import constants
-from demos.smooth_utils import MedianSavgolSmoother
-from demos.viz_utils import FastPoseVisualizer
+from primateface import _constants as constants
+from primateface._smooth import MedianSavgolSmoother
+from primateface._viz import FastPoseVisualizer
 
 
 class TestConstants(unittest.TestCase):
@@ -212,7 +212,7 @@ class TestModelRegistry(unittest.TestCase):
 
     def test_models_dict_consistency(self):
         """MODELS dict should be derived from MODEL_ENTRIES."""
-        from demos.model_registry import MODELS, MODEL_ENTRIES
+        from primateface._model_registry import MODELS, MODEL_ENTRIES
         self.assertEqual(len(MODELS), len(MODEL_ENTRIES))
         for entry in MODEL_ENTRIES:
             self.assertIn(entry.local_name, MODELS)
@@ -223,21 +223,21 @@ class TestModelRegistry(unittest.TestCase):
 
     def test_all_entries_valid_task(self):
         """All entries should have a valid task."""
-        from demos.model_registry import MODEL_ENTRIES
+        from primateface._model_registry import MODEL_ENTRIES
         valid_tasks = {"detection", "pose"}
         for entry in MODEL_ENTRIES:
             self.assertIn(entry.task, valid_tasks)
 
     def test_all_entries_valid_file_type(self):
         """All entries should have a valid file type."""
-        from demos.model_registry import MODEL_ENTRIES
+        from primateface._model_registry import MODEL_ENTRIES
         valid_types = {"config", "checkpoint"}
         for entry in MODEL_ENTRIES:
             self.assertIn(entry.file_type, valid_types)
 
     def test_det_pose_partition(self):
         """DET_FILES + POSE_FILES should cover all files."""
-        from demos.model_registry import DET_FILES, POSE_FILES, LOCAL_FILENAMES
+        from primateface._model_registry import DET_FILES, POSE_FILES, LOCAL_FILENAMES
         self.assertEqual(
             sorted(DET_FILES + POSE_FILES),
             sorted(LOCAL_FILENAMES),
@@ -245,13 +245,13 @@ class TestModelRegistry(unittest.TestCase):
 
     def test_hf_repo_id_format(self):
         """HF repo ID should be in org/repo format."""
-        from demos.model_registry import HF_REPO_ID
+        from primateface._model_registry import HF_REPO_ID
         self.assertIn("/", HF_REPO_ID)
         self.assertEqual(HF_REPO_ID, "fparodi/primateface-models")
 
     def test_get_model_entry(self):
         """get_model_entry should return the correct entry."""
-        from demos.model_registry import get_model_entry
+        from primateface._model_registry import get_model_entry
         det_ckpt = get_model_entry("detection", "checkpoint")
         self.assertEqual(det_ckpt.local_name, "mmdet_checkpoint.pth")
 

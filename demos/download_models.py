@@ -11,11 +11,12 @@ import argparse
 from pathlib import Path
 
 try:
-    from .model_registry import (
+    from primateface._model_registry import (
         HF_REPO_ID, HF_REPO_URL, MODELS, LIBRARY_NAME, LIBRARY_VERSION,
     )
 except ImportError:
-    from model_registry import (
+    # Fallback for standalone script execution
+    from model_registry import (  # type: ignore[no-redef]
         HF_REPO_ID, HF_REPO_URL, MODELS, LIBRARY_NAME, LIBRARY_VERSION,
     )
 

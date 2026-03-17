@@ -89,7 +89,7 @@ class PrimateFace:
         det_cfg, det_ckpt, pose_cfg, pose_ckpt = mgr.ensure_models()
 
         # Initialize the underlying processor
-        from demos.process import PrimateFaceProcessor
+        from ._processor import PrimateFaceProcessor
 
         self._processor = PrimateFaceProcessor(
             det_config=str(det_cfg),
@@ -322,7 +322,7 @@ def _draw_pose_axes(
         image_size: (width, height) of the image.
         axis_length: Length of the axis arrows in pixels.
     """
-    from analysis.constants import POSE_LANDMARK_INDICES, POSE_REFERENCE_3D
+    from primateface.analysis.constants import POSE_LANDMARK_INDICES, POSE_REFERENCE_3D
 
     coords = keypoints[:, :2].astype(np.float64)
     image_points = coords[POSE_LANDMARK_INDICES]
