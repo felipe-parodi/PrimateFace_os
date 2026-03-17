@@ -207,12 +207,12 @@ def download_models_hf(output_dir: Path) -> Dict[str, Path]:
 
     # Import model constants from the centralized registry
     try:
-        from demos.model_registry import HF_REPO_ID, MODELS, LIBRARY_NAME, LIBRARY_VERSION
+        from primateface._model_registry import HF_REPO_ID, MODELS, LIBRARY_NAME, LIBRARY_VERSION
     except ImportError:
         _demos_dir = str(Path(__file__).resolve().parent.parent)
         if _demos_dir not in sys.path:
             sys.path.insert(0, _demos_dir)
-        from model_registry import HF_REPO_ID, MODELS, LIBRARY_NAME, LIBRARY_VERSION
+        from model_registry import HF_REPO_ID, MODELS, LIBRARY_NAME, LIBRARY_VERSION  # type: ignore[no-redef]
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

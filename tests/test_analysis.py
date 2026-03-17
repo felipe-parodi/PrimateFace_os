@@ -8,13 +8,13 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from .constants import (
+from primateface.analysis.constants import (
     MIDLINE,
     NUM_LANDMARKS,
     SYMMETRIC_PAIRS,
     SYMMETRIC_PAIRS_BY_REGION,
 )
-from .kinematics import (
+from primateface.analysis.kinematics import (
     brow_height,
     detect_lip_smack,
     extract_kinematics,
@@ -30,10 +30,10 @@ from .kinematics import (
     mouth_width,
     nose_length,
 )
-from .symmetry import facial_symmetry, per_region_symmetry
-from .head_pose import estimate_head_pose
-from .quality import face_quality
-from .utils import (
+from primateface.analysis.symmetry import facial_symmetry, per_region_symmetry
+from primateface.analysis.head_pose import estimate_head_pose
+from primateface.analysis.quality import face_quality
+from primateface.analysis.utils import (
     fit_midline,
     get_eye_centers,
     interocular_distance,

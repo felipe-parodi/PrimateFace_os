@@ -68,7 +68,7 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
 
 def _cmd_models(args: argparse.Namespace) -> int:
     """List available models."""
-    from demos.model_registry import MODEL_ENTRIES, HF_REPO_URL
+    from ._model_registry import MODEL_ENTRIES, HF_REPO_URL
 
     print(f"Models hosted at: {HF_REPO_URL}\n")
     print(f"{'Task':<12} {'Variant':<10} {'Type':<12} {'Description'}")

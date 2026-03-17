@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
-from demos.model_registry import (
+from ._model_registry import (
     HF_REPO_ID,
     LIBRARY_NAME,
     LIBRARY_VERSION,
