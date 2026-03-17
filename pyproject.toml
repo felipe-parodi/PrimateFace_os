@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "primateface"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Machine Learning Resource for Automated Face Analysis in Human and Non-human Primates"
 readme = "README.md"
 license = {text = "MIT"}
@@ -121,6 +121,9 @@ all = [
     # Landmark converter
     "torch-geometric>=2.0.0",
 ]
+
+[project.scripts]
+primateface = "primateface.cli:main"
 
 [project.urls]
 Homepage = "https://primateface.studio"

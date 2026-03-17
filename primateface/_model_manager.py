@@ -18,13 +18,11 @@ from demos.model_registry import (
 )
 from huggingface_hub import hf_hub_download
 
-# Tasks and file types for the 4 required model files
-_REQUIRED = [
-    ("detection", "config"),
-    ("detection", "checkpoint"),
-    ("pose", "config"),
-    ("pose", "checkpoint"),
-]
+# Mapping from user-facing pose model names to registry variants
+POSE_MODEL_VARIANTS = {
+    "hrnet": "default",
+    "vitpose": "vitpose",
+}
 
 
 class ModelManager:
@@ -36,10 +34,17 @@ class ModelManager:
     Args:
         model_dir: Optional custom directory for model files. If *None*,
             uses the HuggingFace Hub cache (``~/.cache/huggingface/``).
+        pose_variant: Registry variant for the pose model
+            (``"default"`` for HRNet, ``"vitpose"`` for ViTPose).
     """
 
-    def __init__(self, model_dir: Optional[Union[str, Path]] = None) -> None:
+    def __init__(
+        self,
+        model_dir: Optional[Union[str, Path]] = None,
+        pose_variant: str = "default",
+    ) -> None:
         self._model_dir = Path(model_dir) if model_dir else None
+        self._pose_variant = pose_variant
 
     def ensure_models(self) -> Tuple[Path, Path, Path, Path]:
         """Ensure all required model files are available locally.
@@ -50,9 +55,16 @@ class ModelManager:
             Tuple of ``(det_config, det_checkpoint, pose_config,
             pose_checkpoint)`` as absolute Paths.
         """
+        required = [
+            ("detection", "config", "default"),
+            ("detection", "checkpoint", "default"),
+            ("pose", "config", self._pose_variant),
+            ("pose", "checkpoint", self._pose_variant),
+        ]
+
         paths = {}
-        for task, file_type in _REQUIRED:
-            entry = get_model_entry(task, file_type)
+        for task, file_type, variant in required:
+            entry = get_model_entry(task, file_type, variant)
 
             # Check custom model_dir first
             if self._model_dir is not None:
