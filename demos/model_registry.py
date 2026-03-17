@@ -30,6 +30,7 @@ class ModelEntry:
         task: One of ``detection`` or ``pose``.
         file_type: One of ``config`` or ``checkpoint``.
         description: Human-readable one-liner.
+        variant: Model variant name (``"default"`` for the standard model).
     """
 
     local_name: str
@@ -38,6 +39,7 @@ class ModelEntry:
     task: str
     file_type: str
     description: str
+    variant: str = "default"
 
 
 MODEL_ENTRIES: List[ModelEntry] = [
@@ -73,6 +75,25 @@ MODEL_ENTRIES: List[ModelEntry] = [
         file_type="checkpoint",
         description="HRNetV2-W18-DARK 68-keypoint pose weights (38 MB)",
     ),
+    # -- Alternative pose model: ViTPose --
+    ModelEntry(
+        local_name="vitpose_config.py",
+        hf_subfolder="pose",
+        hf_filename="vitpose_base_68kpt_config.py",
+        task="pose",
+        file_type="config",
+        description="ViTPose-Base 68-keypoint pose config (MMPose)",
+        variant="vitpose",
+    ),
+    ModelEntry(
+        local_name="vitpose_checkpoint.pth",
+        hf_subfolder="pose",
+        hf_filename="vitpose_base_68kpt.pth",
+        task="pose",
+        file_type="checkpoint",
+        description="ViTPose-Base 68-keypoint pose weights (1.2 GB)",
+        variant="vitpose",
+    ),
 ]
 
 
@@ -89,12 +110,15 @@ DET_FILES: List[str] = [e.local_name for e in MODEL_ENTRIES if e.task == "detect
 POSE_FILES: List[str] = [e.local_name for e in MODEL_ENTRIES if e.task == "pose"]
 
 
-def get_model_entry(task: str, file_type: str) -> ModelEntry:
-    """Look up a single model entry by task and file type.
+def get_model_entry(
+    task: str, file_type: str, variant: str = "default"
+) -> ModelEntry:
+    """Look up a single model entry by task, file type, and variant.
 
     Args:
         task: ``"detection"`` or ``"pose"``.
         file_type: ``"config"`` or ``"checkpoint"``.
+        variant: Model variant (``"default"`` or e.g. ``"vitpose"``).
 
     Returns:
         The matching ModelEntry.
@@ -103,6 +127,20 @@ def get_model_entry(task: str, file_type: str) -> ModelEntry:
         KeyError: If no entry matches.
     """
     for entry in MODEL_ENTRIES:
-        if entry.task == task and entry.file_type == file_type:
+        if (
+            entry.task == task
+            and entry.file_type == file_type
+            and entry.variant == variant
+        ):
             return entry
-    raise KeyError(f"No model entry for task={task!r}, file_type={file_type!r}")
+    raise KeyError(
+        f"No model entry for task={task!r}, file_type={file_type!r}, "
+        f"variant={variant!r}"
+    )
+
+
+AVAILABLE_VARIANTS: Dict[str, List[str]] = {}
+for _e in MODEL_ENTRIES:
+    AVAILABLE_VARIANTS.setdefault(_e.task, [])
+    if _e.variant not in AVAILABLE_VARIANTS[_e.task]:
+        AVAILABLE_VARIANTS[_e.task].append(_e.variant)
