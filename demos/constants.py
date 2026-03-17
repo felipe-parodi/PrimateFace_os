@@ -121,4 +121,13 @@ TARGET_LANDMARKS_5PT_256X256: np.ndarray = np.array([
     [70.7299 * _SCALE + _OFFSET, 92.2041 * _SCALE + _OFFSET],
 ], dtype=np.float32)
 
+# ArcFace-standard 112x112 target landmarks (the unscaled originals)
+TARGET_LANDMARKS_5PT_112X112: np.ndarray = np.array([
+    [38.2946, 51.6963],
+    [73.5318, 51.5014],
+    [56.0252, 71.7366],
+    [41.5493, 92.3655],
+    [70.7299, 92.2041],
+], dtype=np.float32)
+
 ALIGNED_FACE_SIZE: int = 256
