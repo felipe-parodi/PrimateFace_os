@@ -1,7 +1,12 @@
 """Data export utilities for PrimateFace results.
 
 Converts :class:`Face` objects to common interchange formats:
-CSV, COCO JSON, DeepLabCut CSV/H5, SLEAP ``.slp``, NWB, and DataFrames.
+CSV, COCO JSON, DeepLabCut/Lightning Pose CSV/H5, SLEAP ``.slp``,
+NWB, and pandas DataFrames.
+
+The DLC-format functions (``to_dlc_csv``, ``to_dlc_h5``, ``from_dlc``)
+are also compatible with **Lightning Pose**, which uses the same
+MultiIndex CSV format (scorer / bodyparts / coords).
 
 Example:
     >>> from primateface.io import to_csv, to_dataframe, to_sleap
@@ -215,10 +220,11 @@ def to_dlc_csv(
     output_path: Union[str, Path],
     scorer: str = "primateface",
 ) -> Path:
-    """Export to DeepLabCut-compatible CSV format.
+    """Export to DeepLabCut / Lightning Pose compatible CSV format.
 
-    DLC CSV has a MultiIndex header: scorer / bodypart / (x, y, likelihood).
-    This exports single-frame data for each detected face.
+    DLC/LP CSV has a MultiIndex header: scorer / bodypart / (x, y, likelihood).
+    This exports single-frame data for each detected face. Output is compatible
+    with both DeepLabCut and Lightning Pose prediction formats.
 
     Args:
         faces: List of Face objects.
@@ -260,7 +266,7 @@ def to_dlc_h5(
     output_path: Union[str, Path],
     scorer: str = "primateface",
 ) -> Path:
-    """Export to DeepLabCut-compatible HDF5 format.
+    """Export to DeepLabCut / Lightning Pose compatible HDF5 format.
 
     Args:
         faces: List of Face objects.
@@ -606,10 +612,10 @@ def from_nwb(
 def from_dlc(
     h5_or_csv_path: Union[str, Path],
 ) -> pd.DataFrame:
-    """Load keypoints from a DeepLabCut H5 or CSV file.
+    """Load keypoints from a DeepLabCut or Lightning Pose H5/CSV file.
 
     Args:
-        h5_or_csv_path: Path to DLC predictions (``.h5`` or ``.csv``).
+        h5_or_csv_path: Path to DLC/LP predictions (``.h5`` or ``.csv``).
 
     Returns:
         DLC-format DataFrame with MultiIndex columns
