@@ -7,11 +7,14 @@ import pytest
 
 from primateface.face import Face
 from primateface.io import (
+    DLIB_68_EDGES,
     from_coco_json,
+    from_dlc,
     to_coco_json,
     to_csv,
     to_dataframe,
     to_dlc_csv,
+    to_dlc_h5,
 )
 
 
@@ -158,3 +161,89 @@ class TestToDlcCsv:
         df = pd.read_csv(out, header=[0, 1, 2], index_col=0)
         assert df.columns.nlevels == 3
         assert len(df) == 2
+
+
+class TestDlib68Edges:
+    """Test skeleton edge constant."""
+
+    def test_edges_are_tuples(self):
+        assert isinstance(DLIB_68_EDGES, list)
+        for edge in DLIB_68_EDGES:
+            assert len(edge) == 2
+            assert all(0 <= idx < 68 for idx in edge)
+
+    def test_edges_include_jaw(self):
+        jaw_edges = [(i, i + 1) for i in range(16)]
+        for e in jaw_edges:
+            assert e in DLIB_68_EDGES
+
+    def test_eyes_are_closed_loops(self):
+        assert (41, 36) in DLIB_68_EDGES  # right eye closure
+        assert (47, 42) in DLIB_68_EDGES  # left eye closure
+
+
+class TestFromDlc:
+    """Test DLC import."""
+
+    def test_from_dlc_csv(self, sample_faces, tmp_path):
+        out = to_dlc_csv(sample_faces, tmp_path / "dlc.csv", scorer="test")
+        df = from_dlc(out)
+        assert df.columns.nlevels == 3
+        assert len(df) == 2
+
+    def test_from_dlc_h5(self, sample_faces, tmp_path):
+        pytest.importorskip("tables")  # pytables needed for HDF5
+        out = to_dlc_h5(sample_faces, tmp_path / "dlc.h5", scorer="test")
+        df = from_dlc(out)
+        assert df.columns.nlevels == 3
+        assert len(df) == 2
+
+    def test_from_dlc_bad_extension(self, tmp_path):
+        bad = tmp_path / "file.txt"
+        bad.touch()
+        with pytest.raises(ValueError, match="Unsupported file extension"):
+            from_dlc(bad)
+
+
+class TestSleapInterop:
+    """Test SLEAP export/import (skipped if sleap-io not installed)."""
+
+    @pytest.fixture(autouse=True)
+    def _require_sleap(self):
+        pytest.importorskip("sleap_io")
+
+    def test_to_sleap_creates_file(self, sample_faces, tmp_path):
+        from primateface.io import to_sleap
+        out = to_sleap(sample_faces, tmp_path / "test.slp")
+        assert out.exists()
+
+    def test_sleap_roundtrip(self, sample_faces, tmp_path):
+        from primateface.io import to_sleap, from_sleap
+        slp_path = to_sleap(sample_faces, tmp_path / "test.slp")
+        df = from_sleap(slp_path)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 2  # 2 faces = 2 instances
+        assert "kpt_0_x" in df.columns
+        assert "kpt_67_x" in df.columns
+
+
+class TestNwbInterop:
+    """Test NWB export/import (skipped if pynwb/ndx-pose not installed)."""
+
+    @pytest.fixture(autouse=True)
+    def _require_nwb(self):
+        pytest.importorskip("pynwb")
+        pytest.importorskip("ndx_pose")
+
+    def test_to_nwb_creates_file(self, sample_faces, tmp_path):
+        from primateface.io import to_nwb
+        out = to_nwb(sample_faces, tmp_path / "test.nwb")
+        assert out.exists()
+
+    def test_nwb_roundtrip(self, sample_faces, tmp_path):
+        from primateface.io import to_nwb, from_nwb
+        nwb_path = to_nwb(sample_faces, tmp_path / "test.nwb")
+        df = from_nwb(nwb_path)
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 2
+        assert "kpt_0_x" in df.columns
