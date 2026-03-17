@@ -44,6 +44,7 @@ from tqdm import tqdm
 
 try:
     from .constants import (
+        ALIGNED_FACE_SIZE,
         DEFAULT_BBOX_THR,
         DEFAULT_KPT_THR,
         DEFAULT_NMS_THR,
@@ -52,12 +53,15 @@ try:
         DEFAULT_SAVGOL_WINDOW,
         DET_CAT_ID,
         IMAGE_EXTENSIONS,
+        LANDMARK_5PT_FROM_68_INDICES,
+        TARGET_LANDMARKS_5PT_256X256,
         VIDEO_EXTENSIONS,
     )
     from .smooth_utils import MedianSavgolSmoother
     from .viz_utils import FastPoseVisualizer
 except ImportError:
     from constants import (
+        ALIGNED_FACE_SIZE,
         DEFAULT_BBOX_THR,
         DEFAULT_KPT_THR,
         DEFAULT_NMS_THR,
@@ -66,10 +70,54 @@ except ImportError:
         DEFAULT_SAVGOL_WINDOW,
         DET_CAT_ID,
         IMAGE_EXTENSIONS,
+        LANDMARK_5PT_FROM_68_INDICES,
+        TARGET_LANDMARKS_5PT_256X256,
         VIDEO_EXTENSIONS,
     )
     from smooth_utils import MedianSavgolSmoother
     from viz_utils import FastPoseVisualizer
+
+
+def get_5_source_landmarks_from_68(landmarks_68: np.ndarray) -> np.ndarray:
+    """Extract 5 alignment landmarks from 68 points."""
+    if landmarks_68.shape[0] != 68:
+        return np.full((5, 2), np.nan, dtype=np.float32)
+    idx = LANDMARK_5PT_FROM_68_INDICES
+    pts = np.zeros((5, 2), dtype=np.float32)
+    pts[0] = np.mean(landmarks_68[idx["left_eye_indices"], :2], axis=0)
+    pts[1] = np.mean(landmarks_68[idx["right_eye_indices"], :2], axis=0)
+    pts[2] = landmarks_68[idx["nose_tip_idx"], :2]
+    pts[3] = landmarks_68[idx["left_mouth_corner_idx"], :2]
+    pts[4] = landmarks_68[idx["right_mouth_corner_idx"], :2]
+    return pts
+
+
+def transform_keypoints(keypoints: np.ndarray, transform_matrix: np.ndarray) -> np.ndarray:
+    """Apply a 2x3 affine transform to 2-D keypoints."""
+    if keypoints is None or transform_matrix is None:
+        return np.full_like(keypoints, np.nan) if keypoints is not None else None
+    homogeneous = np.hstack([keypoints[:, :2], np.ones((keypoints.shape[0], 1))])
+    return (homogeneous @ transform_matrix.T).astype(np.float32)
+
+
+def align_face(
+    image_bgr: np.ndarray,
+    landmarks_68: np.ndarray,
+    output_size: int = ALIGNED_FACE_SIZE,
+) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    """Warp a face to canonical 256x256 aligned space using 5-point alignment."""
+    src_5pts = get_5_source_landmarks_from_68(landmarks_68)
+    if np.any(np.isnan(src_5pts)):
+        return None, None
+    matrix, _ = cv2.estimateAffinePartial2D(
+        src_5pts, TARGET_LANDMARKS_5PT_256X256, method=cv2.LMEDS
+    )
+    if matrix is None:
+        matrix, _ = cv2.estimateAffine2D(src_5pts, TARGET_LANDMARKS_5PT_256X256)
+    if matrix is None:
+        return None, None
+    aligned = cv2.warpAffine(image_bgr, matrix, (output_size, output_size), borderValue=(0, 0, 0))
+    return aligned, matrix
 
 
 class PrimateFaceProcessor:
