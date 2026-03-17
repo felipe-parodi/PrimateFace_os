@@ -81,6 +81,17 @@ dinov2 = [
 #     "sleap-io>=0.0.13",
 # ]
 
+# Face embedding (ArcFace re-identification)
+embedding = [
+    "insightface>=0.7.0",
+    "onnxruntime>=1.14.0",
+]
+
+# MegaDescriptor wildlife re-ID embedding
+megadescriptor = [
+    "timm>=0.9.0",
+]
+
 # Framework interop (SLEAP, NWB, DLC import)
 interop = [
     "sleap-io>=0.2.0",
