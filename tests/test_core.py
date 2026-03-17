@@ -110,3 +110,53 @@ class TestAnalyze:
         results = pf_mocked.analyze_batch([dummy_image, dummy_image])
         assert len(results) == 2
         assert all(isinstance(r, list) for r in results)
+
+
+class TestPoseModelSelection:
+    """Test pose_model parameter validation."""
+
+    def test_invalid_pose_model_raises(self):
+        with pytest.raises(ValueError, match="Unknown pose_model"):
+            # This will fail at __init__ before model download
+            with patch("primateface.core.ModelManager"):
+                import torch
+                with patch.object(torch.cuda, "is_available", return_value=False):
+                    PrimateFace(pose_model="nonexistent")
+
+    def test_pose_model_variants_mapping(self):
+        from primateface._model_manager import POSE_MODEL_VARIANTS
+        assert "hrnet" in POSE_MODEL_VARIANTS
+        assert "vitpose" in POSE_MODEL_VARIANTS
+        assert POSE_MODEL_VARIANTS["hrnet"] == "default"
+        assert POSE_MODEL_VARIANTS["vitpose"] == "vitpose"
+
+
+class TestDraw:
+    """Test PrimateFace.draw visualization."""
+
+    @pytest.fixture
+    def faces_and_image(self, mock_processor, dummy_image):
+        with patch.object(PrimateFace, "__init__", lambda self, **kw: None):
+            pf = PrimateFace.__new__(PrimateFace)
+            pf._processor = mock_processor
+            pf.det_threshold = 0.5
+            pf.nms_threshold = 0.3
+            pf.device = "cpu"
+        faces = pf.analyze(dummy_image)
+        return faces, dummy_image
+
+    def test_draw_returns_ndarray(self, faces_and_image):
+        faces, image = faces_and_image
+        result = PrimateFace.draw(faces, image)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == image.shape
+
+    def test_draw_saves_to_file(self, faces_and_image, tmp_path):
+        faces, image = faces_and_image
+        out = tmp_path / "test_viz.jpg"
+        PrimateFace.draw(faces, image, output=str(out))
+        assert out.exists()
+
+    def test_draw_empty_faces(self, dummy_image):
+        result = PrimateFace.draw([], dummy_image)
+        assert result.shape == dummy_image.shape
