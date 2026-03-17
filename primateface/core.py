@@ -197,11 +197,19 @@ class PrimateFace:
             draw_keypoints: Draw landmark points.
             draw_skeleton: Draw skeleton connections.
             draw_bbox: Draw bounding boxes.
-            show_pose: Draw 3D head pose axes (RGB = XYZ = yaw/pitch/roll).
+            show_pose: Draw 3D head pose wireframe cube + axes.
+                When True, keypoints/skeleton/bbox are disabled by
+                default for a cleaner view.
 
         Returns:
             BGR numpy array with faces drawn.
         """
+        # When show_pose is on, turn off other overlays unless explicitly set
+        if show_pose:
+            draw_keypoints = False
+            draw_skeleton = False
+            draw_bbox = False
+
         bgr = PrimateFace._load_image(image)
         canvas = bgr.copy()
 
@@ -246,7 +254,7 @@ class PrimateFace:
                             cv2.line(canvas, p1, p2, (255, 200, 0), 1)
 
             if show_pose:
-                _draw_pose_axes(canvas, face.keypoints, face._image_size)
+                _draw_pose_axes(canvas, face.keypoints, face._image_size, face.bbox)
 
         if output is not None:
             cv2.imwrite(str(output), canvas)
@@ -309,18 +317,19 @@ def _draw_pose_axes(
     canvas: np.ndarray,
     keypoints: np.ndarray,
     image_size: tuple,
-    axis_length: float = 50.0,
+    bbox: Optional[np.ndarray] = None,
 ) -> None:
-    """Draw 3D head pose axes on the canvas.
+    """Draw 3D head pose wireframe cube on the canvas.
 
-    Draws RGB arrows (Red=X, Green=Y, Blue=Z) from the nose tip
-    showing the estimated head orientation.
+    Projects a 3D bounding box around the head using the estimated
+    rotation from cv2.solvePnP, plus RGB axis arrows from the origin.
+    The cube is scaled to match the face bounding box.
 
     Args:
         canvas: BGR image to draw on (modified in place).
         keypoints: Shape (68, 3) with [x, y, score].
         image_size: (width, height) of the image.
-        axis_length: Length of the axis arrows in pixels.
+        bbox: Optional [x1, y1, x2, y2] to scale the cube.
     """
     from primateface.analysis.constants import POSE_LANDMARK_INDICES, POSE_REFERENCE_3D
 
@@ -344,11 +353,40 @@ def _draw_pose_axes(
     if not success:
         return
 
-    # Project 3D axis endpoints to 2D
+    # Scale cube to match bbox size
+    if bbox is not None:
+        bw = float(bbox[2] - bbox[0])
+        bh = float(bbox[3] - bbox[1])
+        s = max(bw, bh) / 2.0 * 0.7  # slightly smaller than bbox
+    else:
+        s = 40.0
+
+    # 3D wireframe cube vertices (8 corners)
+    cube_3d = np.float64([
+        [-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s],  # back face
+        [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s],       # front face
+    ])
+
+    # Project to 2D
+    cube_2d, _ = cv2.projectPoints(cube_3d, rvec, tvec, camera_matrix, dist_coeffs)
+    pts = cube_2d.reshape(-1, 2).astype(int)
+
+    # Draw back face (darker)
+    for i, j in [(0, 1), (1, 2), (2, 3), (3, 0)]:
+        cv2.line(canvas, tuple(pts[i]), tuple(pts[j]), (100, 200, 100), 1)
+    # Draw front face (brighter)
+    for i, j in [(4, 5), (5, 6), (6, 7), (7, 4)]:
+        cv2.line(canvas, tuple(pts[i]), tuple(pts[j]), (0, 255, 0), 2)
+    # Draw connecting edges
+    for i, j in [(0, 4), (1, 5), (2, 6), (3, 7)]:
+        cv2.line(canvas, tuple(pts[i]), tuple(pts[j]), (0, 255, 0), 1)
+
+    # Also draw RGB axis arrows from origin
+    axis_len = s * 1.5
     axis_3d = np.float64([
-        [axis_length, 0, 0],   # X axis (red)
-        [0, axis_length, 0],   # Y axis (green)
-        [0, 0, axis_length],   # Z axis (blue)
+        [axis_len, 0, 0],
+        [0, axis_len, 0],
+        [0, 0, axis_len],
     ])
     origin_3d = np.float64([[0, 0, 0]])
 
@@ -356,8 +394,6 @@ def _draw_pose_axes(
     origin_2d, _ = cv2.projectPoints(origin_3d, rvec, tvec, camera_matrix, dist_coeffs)
 
     origin = tuple(origin_2d[0].ravel().astype(int))
-    colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0)]  # BGR: red, green, blue
-
-    for i, color in enumerate(colors):
+    for i, color in enumerate([(0, 0, 255), (0, 255, 0), (255, 0, 0)]):
         endpoint = tuple(axis_2d[i].ravel().astype(int))
         cv2.arrowedLine(canvas, origin, endpoint, color, 2, tipLength=0.2)
