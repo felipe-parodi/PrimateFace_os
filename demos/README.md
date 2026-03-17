@@ -25,11 +25,15 @@ mim install "mmpose==1.3.2" --trusted-host download.openmmlab.com --trusted-host
 
 ### 2. Download pretrained models
 
+Models are hosted on [Hugging Face](https://huggingface.co/fparodi/primateface-models).
+
 ```bash
 cd demos
 python download_models.py  # Downloads to current directory
 # Or specify output directory:
 python download_models.py ./models
+# Re-download existing files:
+python download_models.py --force
 ```
 
 ### 3. Run face detection and face landmark estimation examples

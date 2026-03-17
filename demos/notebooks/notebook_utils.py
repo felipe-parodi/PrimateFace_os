@@ -140,8 +140,10 @@ def resolve_model_paths(
         raise FileNotFoundError(
             f"Missing model files in {model_dir}:\n"
             + "\n".join(f"  - {m}" for m in missing)
-            + "\n\nRun:  python demos/download_models.py "
-            + str(model_dir)
+            + "\n\nDownload models using one of:\n"
+            + f"  CLI:    python demos/download_models.py {model_dir}\n"
+            + "  Python: from notebook_utils import download_models_hf\n"
+            + f"          download_models_hf('{model_dir}')"
         )
 
     return paths
@@ -179,6 +181,65 @@ def download_demo_asset(
     url = f"https://drive.google.com/uc?id={gdrive_id}"
     gdown.download(url, str(output_path), quiet=False)
     return output_path
+
+
+def download_models_hf(output_dir: Path) -> Dict[str, Path]:
+    """Download PrimateFace models from Hugging Face Hub.
+
+    Downloads detection and pose model checkpoints + configs to the
+    specified directory. Skips files that already exist locally.
+
+    Args:
+        output_dir: Directory to save model files.
+
+    Returns:
+        Dict mapping local filenames to their Paths.
+    """
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError:
+        raise ImportError(
+            "huggingface_hub is required to download models. "
+            "Install with: uv pip install huggingface-hub"
+        )
+
+    import shutil
+
+    # Import model constants from the centralized registry
+    try:
+        from demos.model_registry import HF_REPO_ID, MODELS, LIBRARY_NAME, LIBRARY_VERSION
+    except ImportError:
+        _demos_dir = str(Path(__file__).resolve().parent.parent)
+        if _demos_dir not in sys.path:
+            sys.path.insert(0, _demos_dir)
+        from model_registry import HF_REPO_ID, MODELS, LIBRARY_NAME, LIBRARY_VERSION
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    paths: Dict[str, Path] = {}
+
+    for local_name, (subfolder, hf_filename) in MODELS.items():
+        local_path = output_dir / local_name
+        if local_path.exists():
+            size_mb = local_path.stat().st_size / (1024 * 1024)
+            print(f"  Already exists: {local_name} ({size_mb:.1f} MB)")
+            paths[local_name] = local_path
+            continue
+
+        print(f"  Downloading: {local_name} ...")
+        cached = hf_hub_download(
+            repo_id=HF_REPO_ID,
+            filename=hf_filename,
+            subfolder=subfolder,
+            library_name=LIBRARY_NAME,
+            library_version=LIBRARY_VERSION,
+        )
+        shutil.copy2(cached, str(local_path))
+        size_mb = local_path.stat().st_size / (1024 * 1024)
+        print(f"    Saved: {local_name} ({size_mb:.1f} MB)")
+        paths[local_name] = local_path
+
+    return paths
 
 
 def init_models(

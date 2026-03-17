@@ -15,6 +15,11 @@ from .constants import (
     PRIMATE_GENERA,
     VIDEO_EXTENSIONS,
 )
+from .model_registry import (
+    HF_REPO_ID,
+    MODEL_ENTRIES,
+    MODELS,
+)
 from .process import PrimateFaceProcessor
 from .smooth_utils import MedianSavgolSmoother
 from .viz_utils import FastPoseVisualizer
@@ -32,6 +37,10 @@ __all__ = [
     'IMAGE_EXTENSIONS',
     'VIDEO_EXTENSIONS',
     'PRIMATE_GENERA',
+    # Model registry
+    'HF_REPO_ID',
+    'MODEL_ENTRIES',
+    'MODELS',
 ]
 
 __version__ = '0.1.0'
