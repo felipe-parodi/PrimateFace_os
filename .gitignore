@@ -58,6 +58,10 @@ demos/mmdet_checkpoint.pth
 demos/mmpose_checkpoint.pth
 demos/test_output/
 demos/results/
+demos/notebooks/*_output/
+demos/notebooks/*_demo/
+demos/notebooks/embeddings*.npz
+demos/notebooks/figures_*
 
 # Downloaded YOLO models
 yolov*.pt
