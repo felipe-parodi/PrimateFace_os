@@ -163,7 +163,7 @@ demos/
     ├── lemur_video_timestamping.ipynb
     ├── macaque_face_recognition.ipynb
     ├── howler_vocal_motor_coupling.ipynb
-    ├── macaque_gaze_following.ipynb
+    ├── infant_gaze_following.ipynb
     ├── landmark_demographics.ipynb
     └── facial_action_discovery.ipynb
 ```
