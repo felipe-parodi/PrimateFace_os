@@ -81,6 +81,7 @@ class TestAnalyze:
             pf.nms_threshold = 0.3
             pf.device = "cpu"
             pf._embedding_fn = None
+            pf.embedding_model = None
         return pf
 
     def test_analyze_returns_faces(self, pf_mocked, dummy_image):
@@ -144,6 +145,7 @@ class TestDraw:
             pf.nms_threshold = 0.3
             pf.device = "cpu"
             pf._embedding_fn = None
+            pf.embedding_model = None
         faces = pf.analyze(dummy_image)
         return faces, dummy_image
 

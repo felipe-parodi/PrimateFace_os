@@ -37,6 +37,9 @@ class Face:
     _embedding_fn: Optional[Callable[[np.ndarray], np.ndarray]] = field(
         repr=False, compare=False, default=None
     )
+    _embedding_backend: Optional[str] = field(
+        repr=False, compare=False, default=None
+    )
 
     # -- Eager convenience properties --
 
@@ -116,12 +119,32 @@ class Face:
 
     # -- Embedding / re-identification --
 
+    def _get_aligned_crop(self) -> Optional[np.ndarray]:
+        """Align face to canonical 112x112 for ArcFace embedding.
+
+        Returns:
+            Aligned 112x112 BGR image, or None if alignment fails.
+        """
+        from ._processor import align_face
+        from ._constants import TARGET_LANDMARKS_5PT_112X112
+
+        landmarks_68 = self.keypoints[:, :2]
+        if landmarks_68.shape[0] != 68 or np.any(np.isnan(landmarks_68)):
+            return None
+        aligned, _ = align_face(
+            self._image,
+            landmarks_68,
+            output_size=112,
+            target_landmarks=TARGET_LANDMARKS_5PT_112X112,
+        )
+        return aligned
+
     @functools.cached_property
     def embedding(self) -> np.ndarray:
         """Face embedding vector for re-identification.
 
-        Requires ``PrimateFace(embedding_model='arcface')`` or
-        ``embedding_model='megadescriptor'`` to be set at init time.
+        For ArcFace, the face is aligned to a canonical 112x112 pose before
+        embedding extraction. Falls back to the raw crop if alignment fails.
 
         Returns:
             1-D numpy array (512-d for ArcFace, 1536-d for MegaDescriptor).
@@ -134,6 +157,10 @@ class Face:
                 "No embedding model loaded. Initialize with: "
                 "PrimateFace(embedding_model='arcface')"
             )
+        if self._embedding_backend == "arcface":
+            aligned = self._get_aligned_crop()
+            if aligned is not None:
+                return self._embedding_fn(aligned)
         return self._embedding_fn(self.crop)
 
     def verify(

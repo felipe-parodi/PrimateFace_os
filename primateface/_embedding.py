@@ -36,6 +36,25 @@ def _require_timm():
         )
 
 
+def _parse_device_index(device: str) -> int:
+    """Parse InsightFace ctx_id from a PyTorch device string.
+
+    Args:
+        device: PyTorch device string ("cpu", "cuda", "cuda:0", "cuda:1").
+
+    Returns:
+        InsightFace ctx_id: -1 for CPU, 0+ for GPU index.
+    """
+    device_lower = device.lower()
+    if "cpu" in device_lower:
+        return -1
+    if "cuda" in device_lower:
+        if ":" in device_lower:
+            return int(device_lower.split(":")[1])
+        return 0
+    return -1
+
+
 def load_arcface(device: str = "cpu") -> Tuple[object, Callable]:
     """Load ArcFace recognition model via InsightFace.
 
@@ -54,7 +73,7 @@ def load_arcface(device: str = "cpu") -> Tuple[object, Callable]:
         providers = ["CPUExecutionProvider"]
 
     app = FaceAnalysis(name="buffalo_l", providers=providers)
-    app.prepare(ctx_id=0, det_size=(640, 640))
+    app.prepare(ctx_id=_parse_device_index(device), det_size=(640, 640))
     rec_model = app.models["recognition"]
 
     def embed_fn(crop_bgr: np.ndarray) -> np.ndarray:

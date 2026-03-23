@@ -156,6 +156,7 @@ class PrimateFace:
                 _image=bgr,
                 _image_size=image_size,
                 _embedding_fn=self._embedding_fn,
+                _embedding_backend=self.embedding_model,
             )
             faces.append(face)
 

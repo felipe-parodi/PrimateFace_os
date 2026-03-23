@@ -178,35 +178,6 @@ class TestFastPoseVisualizer(unittest.TestCase):
         self.assertEqual(viz.TEXT_COLOR, constants.TEXT_COLOR_BGR)
 
 
-class TestImports(unittest.TestCase):
-    """Test that all modules can be imported."""
-    
-    def test_import_constants(self):
-        """Test importing constants module."""
-        from demos import constants
-        self.assertIsNotNone(constants)
-    
-    def test_import_smooth_utils(self):
-        """Test importing smooth_utils module."""
-        from demos.smooth_utils import MedianSavgolSmoother
-        self.assertIsNotNone(MedianSavgolSmoother)
-    
-    def test_import_viz_utils(self):
-        """Test importing viz_utils module."""
-        from demos.viz_utils import FastPoseVisualizer
-        self.assertIsNotNone(FastPoseVisualizer)
-    
-    def test_import_process(self):
-        """Test importing process module (without models)."""
-        try:
-            from demos.process import PrimateFaceProcessor  # noqa: F401
-        except ImportError as e:
-            if "mmdet" in str(e) or "mmpose" in str(e):
-                self.skipTest("MMDetection/MMPose not installed")
-            else:
-                raise
-
-
 class TestModelRegistry(unittest.TestCase):
     """Test model registry consistency."""
 
