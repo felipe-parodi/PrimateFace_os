@@ -26,6 +26,13 @@ from .kinematics import (
     mouth_width,
     nose_length,
 )
+from .features import (
+    DEFAULT_DISTANCE_PAIRS,
+    SKELETON_EDGES,
+    aggregate_timeseries,
+    build_face_adjacency,
+    pairwise_distances,
+)
 from .quality import face_quality
 from .symmetry import facial_symmetry, per_region_symmetry
 from .utils import (
@@ -63,4 +70,10 @@ __all__ = [
     "get_eye_centers",
     "load_keypoints_from_coco",
     "visibility_ratio",
+    # features
+    "SKELETON_EDGES",
+    "DEFAULT_DISTANCE_PAIRS",
+    "build_face_adjacency",
+    "pairwise_distances",
+    "aggregate_timeseries",
 ]

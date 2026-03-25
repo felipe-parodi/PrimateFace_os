@@ -6,8 +6,9 @@ for primate face detection, landmark estimation, and analysis.
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Union
+from typing import Callable, Dict, List, Optional, Sequence, Union
 
 import cv2
 import numpy as np
@@ -17,6 +18,47 @@ from ._model_manager import ModelManager, POSE_MODEL_VARIANTS
 from ._embedding import EMBEDDING_BACKENDS
 
 InputType = Union[str, Path, np.ndarray]
+
+
+@dataclasses.dataclass
+class VideoResult:
+    """Result of processing a video with PrimateFace.
+
+    Attributes:
+        raw_keypoints: Per-frame keypoints (T, 68, 3) for best face.
+        aligned_keypoints: Affine-aligned keypoints (T, 68, 2).
+        smoothed_keypoints: Temporally smoothed + aligned (T, 68, 2).
+        bboxes: Bounding boxes (T, 4) as [x1, y1, x2, y2].
+        scores: Detection confidence scores (T,).
+        valid_frame_indices: Source frame indices with detections.
+        total_frames_sampled: How many frames were sampled from the video.
+        fps: Video frames per second.
+        faces_per_frame: Number of detected faces per sampled frame.
+    """
+
+    raw_keypoints: np.ndarray
+    aligned_keypoints: np.ndarray
+    smoothed_keypoints: np.ndarray
+    bboxes: np.ndarray
+    scores: np.ndarray
+    valid_frame_indices: np.ndarray
+    total_frames_sampled: int
+    fps: float
+    faces_per_frame: np.ndarray
+
+    def to_dict(self) -> Dict[str, np.ndarray]:
+        """Convert to dict for np.savez."""
+        return {
+            "raw_keypoints": self.raw_keypoints,
+            "aligned_keypoints": self.aligned_keypoints,
+            "smoothed_keypoints": self.smoothed_keypoints,
+            "bboxes": self.bboxes,
+            "scores": self.scores,
+            "valid_frame_indices": self.valid_frame_indices,
+            "total_frames_sampled": np.array(self.total_frames_sampled),
+            "fps": np.array(self.fps),
+            "faces_per_frame": self.faces_per_frame,
+        }
 
 
 class PrimateFace:
@@ -178,6 +220,290 @@ class PrimateFace:
             List of Face lists, one per input image.
         """
         return [self.analyze(img) for img in images]
+
+    def process_video(
+        self,
+        video_path: Union[str, Path],
+        max_frames: int = 30,
+        min_frames: int = 5,
+        align: bool = True,
+        smooth: bool = True,
+        smooth_params: Optional[Dict] = None,
+    ) -> VideoResult:
+        """Process a video: sample frames, detect, align, smooth.
+
+        Extracts uniformly-spaced frames, runs detection + pose on each,
+        optionally aligns landmarks to canonical space and applies
+        temporal smoothing.
+
+        Args:
+            video_path: Path to video file.
+            max_frames: Maximum frames to sample.
+            min_frames: Minimum frames required (raises if fewer).
+            align: Apply 5-point affine alignment to landmarks.
+            smooth: Apply median + Savitzky-Golay temporal smoothing.
+            smooth_params: Override smoothing params (median_window,
+                savgol_window, savgol_order).
+
+        Returns:
+            VideoResult with raw, aligned, and smoothed keypoints.
+
+        Raises:
+            FileNotFoundError: If video does not exist.
+            ValueError: If video cannot be opened or is too short.
+        """
+        from ._processor import align_face, transform_keypoints
+        from ._smooth import MedianSavgolSmoother
+
+        video_path = Path(video_path)
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video not found: {video_path}")
+
+        # --- Frame extraction (decord if available, else OpenCV) ---
+        try:
+            from decord import VideoReader, cpu
+
+            vr = VideoReader(str(video_path), ctx=cpu(0))
+            total = len(vr)
+            fps = float(vr.get_avg_fps())
+            n_sample = min(max_frames, total)
+            if total < min_frames:
+                raise ValueError(
+                    f"Video too short: {total} frames < {min_frames}"
+                )
+            indices = np.linspace(0, total - 1, n_sample, dtype=int).tolist()
+            frames_batch = vr.get_batch(indices).asnumpy()  # (N, H, W, 3) RGB
+            frames = [
+                cv2.cvtColor(frames_batch[i], cv2.COLOR_RGB2BGR)
+                for i in range(frames_batch.shape[0])
+            ]
+        except ImportError:
+            cap = cv2.VideoCapture(str(video_path))
+            if not cap.isOpened():
+                raise ValueError(f"Cannot open video: {video_path}")
+            total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+            if total < min_frames:
+                cap.release()
+                raise ValueError(
+                    f"Video too short: {total} frames < {min_frames}"
+                )
+            n_sample = min(max_frames, total)
+            indices = np.linspace(0, total - 1, n_sample, dtype=int)
+            frames = []
+            for idx in indices:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
+                ret, frame = cap.read()
+                if ret:
+                    frames.append(frame)
+            cap.release()
+            indices = indices[: len(frames)].tolist()
+
+        # --- Per-frame detection + pose ---
+        all_raw_kpts = []
+        all_aligned_kpts = []
+        all_bboxes = []
+        all_scores = []
+        valid_indices = []
+        faces_per_frame = []
+
+        for i, frame in enumerate(frames):
+            faces = self.analyze(frame)
+            faces_per_frame.append(len(faces))
+
+            if not faces:
+                continue
+
+            best = max(faces, key=lambda f: f.score)
+            if best.score < self.det_threshold:
+                continue
+
+            raw_kpts = best.keypoints  # (68, 3)
+            all_raw_kpts.append(raw_kpts)
+            all_bboxes.append(np.array(best.bbox))
+            all_scores.append(best.score)
+            valid_indices.append(i)
+
+            # Alignment
+            if align:
+                _, matrix = align_face(frame, raw_kpts[:, :2])
+                if matrix is not None:
+                    aligned_xy = transform_keypoints(raw_kpts[:, :2], matrix)
+                    all_aligned_kpts.append(aligned_xy)
+                else:
+                    all_aligned_kpts.append(raw_kpts[:, :2].copy())
+            else:
+                all_aligned_kpts.append(raw_kpts[:, :2].copy())
+
+        # --- Stack arrays ---
+        if not valid_indices:
+            empty3 = np.zeros((0, 68, 3), dtype=np.float32)
+            empty2 = np.zeros((0, 68, 2), dtype=np.float32)
+            return VideoResult(
+                raw_keypoints=empty3,
+                aligned_keypoints=empty2,
+                smoothed_keypoints=empty2,
+                bboxes=np.zeros((0, 4), dtype=np.float32),
+                scores=np.zeros(0, dtype=np.float32),
+                valid_frame_indices=np.array([], dtype=int),
+                total_frames_sampled=len(frames),
+                fps=fps,
+                faces_per_frame=np.array(faces_per_frame, dtype=int),
+            )
+
+        raw_kpts_arr = np.stack(all_raw_kpts)       # (T', 68, 3)
+        aligned_arr = np.stack(all_aligned_kpts)     # (T', 68, 2)
+        bboxes_arr = np.stack(all_bboxes)            # (T', 4)
+        scores_arr = np.array(all_scores)            # (T',)
+
+        # --- Temporal smoothing on aligned keypoints ---
+        if smooth and aligned_arr.shape[0] >= 3:
+            sp = smooth_params or {}
+            smoother = MedianSavgolSmoother(
+                median_window=sp.get("median_window", 5),
+                savgol_window=sp.get("savgol_window", 7),
+                savgol_order=sp.get("savgol_order", 3),
+            )
+            smoothed_frames = []
+            for t in range(aligned_arr.shape[0]):
+                # Smoother expects keypoints (68, 2) and scores (68,)
+                smoothed = smoother.update(
+                    instance_id=0,
+                    keypoints=aligned_arr[t],
+                    keypoint_scores=raw_kpts_arr[t, :, 2],
+                )
+                smoothed_frames.append(smoothed)
+            smoothed_arr = np.stack(smoothed_frames)  # (T', 68, 2)
+        else:
+            smoothed_arr = aligned_arr.copy()
+
+        return VideoResult(
+            raw_keypoints=raw_kpts_arr,
+            aligned_keypoints=aligned_arr,
+            smoothed_keypoints=smoothed_arr,
+            bboxes=bboxes_arr,
+            scores=scores_arr,
+            valid_frame_indices=np.array(valid_indices, dtype=int),
+            total_frames_sampled=len(frames),
+            fps=fps,
+            faces_per_frame=np.array(faces_per_frame, dtype=int),
+        )
+
+    def render_video(
+        self,
+        video_path: Union[str, Path],
+        output_path: Union[str, Path],
+        max_frames: int = 0,
+        draw_keypoints: bool = True,
+        draw_skeleton: bool = True,
+        draw_bbox: bool = True,
+        fps: Optional[int] = None,
+    ) -> Path:
+        """Render a video with PrimateFace landmark overlay.
+
+        Processes the video, draws landmarks on each frame, and writes
+        the result. Uses ffmpeg for fast encoding when available.
+
+        Args:
+            video_path: Input video path.
+            output_path: Output MP4 path.
+            max_frames: Limit frames (0 = all).
+            draw_keypoints: Draw landmark points.
+            draw_skeleton: Draw skeleton connections.
+            draw_bbox: Draw bounding boxes.
+            fps: Output FPS (None = match source).
+
+        Returns:
+            Path to the rendered video.
+        """
+        import subprocess
+
+        from .analysis.features import SKELETON_EDGES
+
+        video_path = Path(video_path)
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+            raise ValueError(f"Cannot open video: {video_path}")
+
+        total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        src_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        out_fps = fps or int(src_fps)
+
+        n_frames = min(max_frames, total) if max_frames > 0 else total
+        frame_indices = np.linspace(0, total - 1, n_frames, dtype=int)
+
+        # Try ffmpeg pipe for fast encoding
+        use_ffmpeg = True
+        try:
+            ffmpeg_cmd = [
+                "ffmpeg", "-y", "-f", "rawvideo",
+                "-vcodec", "rawvideo", "-pix_fmt", "bgr24",
+                "-s", f"{w}x{h}", "-r", str(out_fps),
+                "-i", "-",
+                "-c:v", "libx264", "-preset", "fast",
+                "-pix_fmt", "yuv420p",
+                str(output_path),
+            ]
+            pipe = subprocess.Popen(
+                ffmpeg_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            use_ffmpeg = False
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(
+                str(output_path), fourcc, out_fps, (w, h)
+            )
+
+        for fi in frame_indices:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, int(fi))
+            ret, frame = cap.read()
+            if not ret:
+                continue
+
+            faces = self.analyze(frame)
+
+            for face in faces:
+                kpts = face.keypoints[:, :2]
+                conf = face.keypoints[:, 2]
+
+                if draw_bbox:
+                    x1, y1, x2, y2 = face.bbox.astype(int)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+                if draw_skeleton:
+                    for si, sj in SKELETON_EDGES:
+                        if conf[si] > 0.3 and conf[sj] > 0.3:
+                            p1 = (int(kpts[si, 0]), int(kpts[si, 1]))
+                            p2 = (int(kpts[sj, 0]), int(kpts[sj, 1]))
+                            cv2.line(frame, p1, p2, (0, 165, 255), 1)
+
+                if draw_keypoints:
+                    for k in range(68):
+                        if conf[k] > 0.3:
+                            pt = (int(kpts[k, 0]), int(kpts[k, 1]))
+                            cv2.circle(frame, pt, 2, (0, 0, 255), -1)
+
+            if use_ffmpeg:
+                pipe.stdin.write(frame.tobytes())
+            else:
+                writer.write(frame)
+
+        cap.release()
+        if use_ffmpeg:
+            pipe.stdin.close()
+            pipe.wait()
+        else:
+            writer.release()
+
+        return output_path
 
     @staticmethod
     def draw(

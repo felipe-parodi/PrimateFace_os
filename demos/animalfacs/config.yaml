@@ -1,0 +1,148 @@
+# PrimateFace × AnimalFACS Demo Configuration
+# All paths, hyperparameters, and random seeds in one place.
+
+seed: 42
+
+paths:
+  data_root: "../../../data/animalfacs"       # relative to this file
+  results_root: "../../../data/animalfacs/results"
+  manifest: "../../../data/animalfacs/manifest.json"
+  video_inventory: "../../../data/animalfacs/video_inventory.csv"
+  au_definitions: "../../../data/animalfacs/au_definitions.json"
+  au_dataset: "../../../data/animalfacs/au_dataset.parquet"
+  features_matrix: "../../../data/animalfacs/features_matrix.npz"
+
+primateface:
+  device: "cuda:0"
+  pose_model: "hrnet"
+  det_threshold: 0.25
+  nms_threshold: 0.3
+
+preprocessing:
+  max_frames_per_clip: 30        # uniform sample per clip
+  min_frames_per_clip: 5         # skip clips shorter than this
+  frame_size: [256, 256]         # resize for feature extraction
+  min_detection_conf: 0.3        # skip frames with no detection above this
+
+features:
+  # Pairwise landmark distance groups (anatomical)
+  distance_groups:
+    brow_eye: [[17,36], [18,37], [19,38], [21,39], [22,42], [23,43], [24,44], [26,45]]
+    eye_nose: [[39,30], [42,30], [36,31], [45,35]]
+    nose_mouth: [[30,51], [30,57], [33,62], [33,66]]
+    mouth_jaw: [[48,5], [54,11], [57,8]]
+    eye_mouth: [[39,48], [42,54]]
+    brow_brow: [[21,22]]
+  use_distances: false    # Use only 14 kinematics features (not 180)
+  aggregation_stats: ["mean", "std"]  # Simpler: 14*2=28 features
+
+qa:
+  min_single_face_frac: 0.7
+  min_visibility: 0.5
+  min_detected_frames: 5
+  filter_mode: "pass_and_warn"  # keep pass+warn, drop fail
+
+models:
+  g1_rf:
+    n_estimators: 200
+    max_depth: 10
+    min_samples_leaf: 5
+    class_weight: "balanced"
+  g1_xgb:
+    n_estimators: 200
+    max_depth: 6
+    learning_rate: 0.1
+    scale_pos_weight: 2.0
+  g2_tcn:
+    channels: [64, 128, 128]
+    kernel_size: 3
+    dilations: [1, 2, 4]
+    dropout: 0.3
+    lr: 0.001
+    weight_decay: 0.0001
+    epochs: 100
+    batch_size: 16
+    patience: 15
+  g3_stgcn:
+    channels: [32, 64]
+    temporal_kernel: 9
+    dropout: 0.3
+    lr: 0.001
+    weight_decay: 0.0001
+    epochs: 100
+    batch_size: 16
+    patience: 15
+
+evaluation:
+  cv_folds: 5
+  min_clips_per_species: 10      # skip species with fewer clips
+  min_clips_per_au: 5            # skip AUs with fewer positive clips
+  metrics: ["f1_macro", "f1_micro", "auroc", "map", "hamming_loss"]
+
+visualization:
+  dpi: 300
+  figsize_single: [6, 4]
+  figsize_wide: [10, 6]
+  figsize_heatmap: [8, 6]
+  font_size: 12
+  label_size: 14
+  title_size: 14
+  colormap: "viridis"
+  video_fps: 10
+  video_codec: "mp4v"
+
+species:
+  chimp:
+    common_name: "Chimpanzee"
+    latin_name: "Pan troglodytes"
+    facs_system: "ChimpFACS"
+    source_url: "https://animalfacs.github.io/AnimalFACS/ChimpFACS"
+    manual_gdrive_id: "1hqfT1xXDIJcwaYMAvpqArXZEd6kWadrA"
+    manual_type: "file"
+    training_videos_gdrive_id: "1t3JzFGIAd-fTOmwvlN5EKgVyShqpNF0O"
+    test_materials_gdrive_id: "15QdviHrG5giBzN8Hv6mFuBkU-CVOJxmh"
+  macaque:
+    common_name: "Rhesus macaque"
+    latin_name: "Macaca mulatta"
+    facs_system: "MaqFACS"
+    source_url: "https://animalfacs.github.io/MaqFACS/"
+    manual_gdrive_id: "1Cy8iTQzLLO6Sbkyz1Bzi5qglcs363UVz"
+    manual_type: "folder"
+    training_videos_gdrive_id: "1DDtbIUvHSgdEGqRrmsBfSYZPK7iTJ3pM"
+    test_materials_gdrive_id: "1xlcIphqxTckbv1oirb-vFDzL3IvSwFxO"
+  gibbon:
+    common_name: "Gibbon"
+    latin_name: "Hylobatidae spp."
+    facs_system: "GibbonFACS"
+    source_url: "https://animalfacs.github.io/AnimalFACS/GibbonFACS"
+    manual_gdrive_id: "1ReHhN4ljke5y88RVC3tqHytCbi86SMz6"
+    manual_type: "file"
+    training_videos_gdrive_id: "1aoKyuufbF9mMwXHIFH3AQI0jjHSpD5AT"
+    test_materials_gdrive_id: "1SylyuObLjlcvTckCxUvHCzqBIW520wNh"
+  orangutan:
+    common_name: "Orangutan"
+    latin_name: "Pongo spp."
+    facs_system: "OrangFACS"
+    source_url: "https://animalfacs.github.io/AnimalFACS/OrangFACS"
+    manual_gdrive_id: "1HKHvcMehVJS0DPGemPJYfyKaOU5U4X7j"
+    manual_type: "file"
+    training_videos_gdrive_id: "1ar-Tjl2M8OifSP5GzGc_Dcb3Xyp517wO"
+    test_materials_gdrive_id: "1C3i_wLeylxyo1s6BbTn2eEWglau6cetT"
+  marmoset:
+    common_name: "Common marmoset"
+    latin_name: "Callithrix jacchus"
+    facs_system: "CalliFACS"
+    source_url: "https://animalfacs.github.io/AnimalFACS/CalliFACS"
+    manual_gdrive_id: "1RqzB8VBnIu-GwSVAROZRFcn2fLY9pn52"
+    manual_type: "file"
+    training_videos_gdrive_id: null
+    test_materials_gdrive_id: "1NA5pRVHTGoFBUfXVsv3pJyqNvB6TzhpK"
+  gorilla:
+    common_name: "Gorilla"
+    latin_name: "Gorilla sp."
+    facs_system: "GorillaFACS"
+    source_url: "https://animalfacs.github.io/AnimalFACS/GorillaFACS"
+    manual_gdrive_id: "13NhHGyEQ9lhNRVfv4u_NqJRf-hJK8FEc"
+    manual_type: "file"
+    training_videos_gdrive_id: null
+    test_materials_gdrive_id: null
