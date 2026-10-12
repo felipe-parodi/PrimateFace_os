@@ -51,7 +51,8 @@ def fit_temperature(logits: np.ndarray, labels: np.ndarray) -> float:
         return loss
 
     opt.step(closure)
-    return float(log_t.exp().item())
+    t = float(log_t.exp().item())
+    return float(np.clip(t, 0.25, 10.0)) if np.isfinite(t) else 1.0
 
 
 def pick_species_threshold(val: Dict[str, np.ndarray], temps: Dict[str, float], target_acc: float = 0.9) -> float:

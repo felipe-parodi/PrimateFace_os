@@ -26,7 +26,11 @@ import pandas as pd
 from species_benchmark.taxonomy import PrimateTaxonomy
 
 MIN_SPECIES_IMGS = 20
-GENUS_ONLY_SOURCES = {"bing_folder"}
+# Labels trusted only to genus (web search folders, unverified community IDs).
+GENUS_ONLY_SOURCES = {"bing_folder", "inat_casual", "inat_needs_id"}
+# Labels verified enough to evaluate on (community-agreed or curated).
+EVAL_SOURCES = {"inat_research", "gbif", "treeoflife_gbif"}
+EXCLUDED_LICENSES = {"all-rights-reserved"}
 
 
 class _UnionFind:
@@ -195,23 +199,34 @@ def main() -> None:
     df = pd.read_parquet(args.manifest)
     if "crop_exists" in df.columns:
         df = df[df["crop_exists"]]
+    df = df[df["crop_path"].map(lambda p: Path(p).exists())]
+    if "license" in df.columns:
+        df = df[~df["license"].isin(EXCLUDED_LICENSES)]
     df = attach_labels(df, tax)
     df = df[df["genus"].notna() & (df["genus"] != "Homo")].reset_index(drop=True)
     df["group"] = build_groups(df)
     df["strat"] = df["species"].fillna(df["genus"])
 
-    hard = ~df["label_source"].isin(GENUS_ONLY_SOURCES)
+    # Groups containing any eval-eligible crop are split; others go to train. A group is
+    # never divided, so non-eligible crops sharing a group follow the group's split.
     df["split"] = "train"
-    df.loc[hard, "split"] = assign_splits(df[hard], "strat").values
+    eligible_groups = set(df.loc[df["label_source"].isin(EVAL_SOURCES), "group"])
+    in_eval = df["group"].isin(eligible_groups)
+    df.loc[in_eval, "split"] = assign_splits(df[in_eval], "strat").values
     # Bing genus-only: a held-out genus test of its own, never mixed into the main test.
-    bing = df[~hard]
+    bing = df[(df["label_source"] == "bing_folder") & ~in_eval]
     if len(bing):
-        df.loc[~hard, "split"] = assign_splits(bing, "genus", test_frac=0.10, val_frac=0.0).replace(
+        df.loc[bing.index, "split"] = assign_splits(bing, "genus", test_frac=0.10, val_frac=0.0).replace(
             {"test": "test_bing"}
         ).values
 
-    # Leakage check: no group spans splits.
-    spans = df.groupby("group")["split"].nunique()
+    # Unverified crops that share a group with held-out crops are kept out of both train
+    # and evaluation.
+    held = df["split"].isin(["val", "test"]) & ~df["label_source"].isin(EVAL_SOURCES)
+    df.loc[held, "split"] = df.loc[held, "split"] + "_unverified"
+
+    # Leakage check: no group spans train and held-out splits.
+    spans = df.assign(base=df["split"].str.replace("_unverified", "")).groupby("group")["base"].nunique()
     assert (spans == 1).all(), f"{(spans > 1).sum()} groups span splits"
 
     space = build_label_space(df[df["split"] == "train"], args.min_species)

@@ -23,9 +23,8 @@ import argparse
 import hashlib
 import json
 import re
-from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 import pandas as pd
 
@@ -125,6 +124,8 @@ def norm_license(raw: Optional[str]) -> Optional[str]:
         return s
     if s.startswith("by"):
         return "cc-" + s
+    if "copyright" in s or len(s) > 40:
+        return "other-restrictive"
     return s
 
 
@@ -452,12 +453,14 @@ def dedupe(df: pd.DataFrame) -> pd.DataFrame:
         df: Face rows in priority order.
 
     Returns:
-        Deduplicated frame with ``dup_of_source`` dropped rows removed.
+        Deduplicated frame.
     """
     seen_sha: Dict[str, str] = {}
     seen_photo: Dict[str, str] = {}
     keep = []
     for img, sha, pid in zip(df["image_path"], df["image_sha256"], df["photo_id"]):
+        sha = sha if isinstance(sha, str) and sha else None
+        pid = pid if isinstance(pid, str) and pid else None
         owner = None
         if sha and sha in seen_sha:
             owner = seen_sha[sha]
