@@ -56,7 +56,9 @@ def run_logits(run: Path, df: pd.DataFrame, bs: int = 256, workers: int = 12) ->
     """
     ck = torch.load(run / "best.pt", map_location="cpu", weights_only=False)
     space = ck["label_space"]
-    model = TaxonClassifier(ck["backbone"], {lvl: len(space[lvl]) for lvl in LEVELS}, pretrained=False)
+    model = TaxonClassifier(
+        ck["backbone"], {lvl: len(space[lvl]) for lvl in LEVELS}, pretrained=False, img_size=ck["img_size"]
+    )
     model.load_state_dict(ck["state_dict"])
     model = model.cuda().eval()
     _, eval_tf = make_transforms(ck["data_config"], ck["img_size"])

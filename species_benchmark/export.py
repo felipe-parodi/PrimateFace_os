@@ -101,7 +101,9 @@ def main() -> None:
     temps = {lvl: fit_temperature(val[lvl], val["labels"][:, j]) for j, lvl in enumerate(LEVELS)}
     thr = {"species": pick_species_threshold(val, temps), "genus": 0.3}
 
-    model = TaxonClassifier(ck["backbone"], {lvl: len(space[lvl]) for lvl in LEVELS}, pretrained=False)
+    model = TaxonClassifier(
+        ck["backbone"], {lvl: len(space[lvl]) for lvl in LEVELS}, pretrained=False, img_size=ck["img_size"]
+    )
     model.load_state_dict(ck["state_dict"])
     lat = cpu_latency(model, ck["img_size"])
 

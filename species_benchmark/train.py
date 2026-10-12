@@ -240,7 +240,7 @@ def main() -> None:
         tests["test_yt_consensus"] = pd.read_parquet(args.data_dir / "yt_consensus_test.parquet")
 
     n_classes = {lvl: len(space[lvl]) for lvl in LEVELS}
-    model = TaxonClassifier(args.backbone, n_classes).to(device)
+    model = TaxonClassifier(args.backbone, n_classes, img_size=args.img_size).to(device)
     if args.text_init:
         model.init_heads_from_text({lvl: space[lvl] for lvl in LEVELS}, taxon_prompts(space, space.get("common")))
     if args.grad_ckpt and hasattr(model.backbone, "set_grad_checkpointing"):

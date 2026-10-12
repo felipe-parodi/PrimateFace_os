@@ -94,7 +94,7 @@ def square_crop(image: np.ndarray, bbox: Sequence[float], scale: float = 1.25, s
     return cv2.resize(crop, (size, size), interpolation=cv2.INTER_AREA)
 
 
-def _build_net(backbone: str, n_classes: Dict[str, int], cosine: bool):
+def _build_net(backbone: str, n_classes: Dict[str, int], cosine: bool, img_size: Optional[int] = None):
     """Recreate the training-time network (without downloading weights)."""
     import torch
     import torch.nn as nn
@@ -114,8 +114,11 @@ def _build_net(backbone: str, n_classes: Dict[str, int], cosine: bool):
             else:
                 import timm
 
-                self.backbone = timm.create_model(backbone, pretrained=False, num_classes=0)
-                dim = self.backbone.num_features
+                try:
+                    self.backbone = timm.create_model(backbone, pretrained=False, num_classes=0, img_size=img_size)
+                except TypeError:
+                    self.backbone = timm.create_model(backbone, pretrained=False, num_classes=0)
+                dim = int(getattr(self.backbone, "head_hidden_size", None) or self.backbone.num_features)
                 self._clip = False
             self.heads = nn.ModuleDict({k: nn.Linear(dim, n, bias=not cosine) for k, n in n_classes.items()})
             self.logit_scale = nn.Parameter(torch.zeros(())) if cosine else None
@@ -168,7 +171,7 @@ class TaxonClassifier:
         self.genus_threshold = genus_threshold if genus_threshold is not None else th.get("genus", 0.3)
         self.common_names: Dict[str, str] = self.space.get("common", {})
         n_classes = {k: len(self.space[k]) for k in LEVELS}
-        self.net = _build_net(self.backbone, n_classes, bool(ckpt["cosine"]))
+        self.net = _build_net(self.backbone, n_classes, bool(ckpt["cosine"]), self.img_size)
         self.net.load_state_dict(ckpt["state_dict"])
         self.device = device
         self.net.eval().to(device)

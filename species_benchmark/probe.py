@@ -41,7 +41,7 @@ def extract(backbone: str, data_dir: Path, img_size: int = 224, workers: int = 1
         Path of the saved ``.npz`` (crop_id, feats).
     """
     df = pd.read_parquet(data_dir / "labeled.parquet")
-    net, _, cfg = build_backbone(backbone)
+    net, _, cfg = build_backbone(backbone, img_size=img_size)
     net = net.cuda().eval()
     _, eval_tf = make_transforms(cfg, img_size)
     dl = DataLoader(CropDataset(df, eval_tf), batch_size=256, num_workers=workers, pin_memory=True)
