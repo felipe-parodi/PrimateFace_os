@@ -27,7 +27,7 @@ from species_benchmark.metrics import coverage_curve, level_metrics
 from species_benchmark.model import LEVELS, TaxonClassifier, taxon_prompts
 
 DATA_DIR = Path("C:/pfspecies/data")
-EXTERNAL_TESTS = {"ext_rare_species": Path("C:/pfspecies/external/rare_species_test.parquet")}
+EXTERNAL_TESTS = {"ext_rare_species": Path("C:/pfspecies/external/rare_species_test_dedup.parquet")}
 
 
 def load_external(path: Path, space: Dict[str, object]) -> pd.DataFrame:
@@ -113,14 +113,21 @@ def hier_loss(
     kd_alpha: float,
     kd_t: float,
     level_w: Dict[str, float],
+    log_prior: Optional[Dict[str, torch.Tensor]] = None,
 ) -> torch.Tensor:
-    """Sum of per-level CE (ignore -1) plus optional KL to teacher logits."""
+    """Sum of per-level CE (ignore -1) plus optional KL to teacher logits.
+
+    With ``log_prior`` the CE uses logit adjustment (Menon et al., 2021): training
+    logits are shifted by tau*log(prior), so the raw logits at inference are
+    balanced across classes.
+    """
     total = 0.0
     for j, lvl in enumerate(LEVELS):
         y = labels[:, j]
         lg = logits[lvl].float()
         if (y >= 0).any():
-            ce = F.cross_entropy(lg, y, ignore_index=-1, label_smoothing=smoothing)
+            lg_ce = lg + log_prior[lvl] if log_prior is not None else lg
+            ce = F.cross_entropy(lg_ce, y, ignore_index=-1, label_smoothing=smoothing)
             total = total + level_w[lvl] * (1 - kd_alpha if f"t_{lvl}" in batch else 1.0) * ce
         if f"t_{lvl}" in batch and kd_alpha > 0:
             t = batch[f"t_{lvl}"].float()
@@ -211,6 +218,7 @@ def main() -> None:
     ap.add_argument("--img-size", type=int, default=224)
     ap.add_argument("--smoothing", type=float, default=0.1)
     ap.add_argument("--balance-power", type=float, default=0.5)
+    ap.add_argument("--logit-adjust", type=float, default=0.0, help="tau for logit-adjusted CE (0 = off)")
     ap.add_argument("--text-init", action="store_true", help="init CLIP heads from BioCLIP text embeddings")
     ap.add_argument("--teacher", type=Path, default=None, help="npz of teacher logits for KD")
     ap.add_argument("--kd-alpha", type=float, default=0.7)
@@ -278,6 +286,16 @@ def main() -> None:
         opt, lambda s: (s + 1) / warm if s < warm else 0.5 * (1 + math.cos(math.pi * (s - warm) / max(1, steps - warm)))
     )
     level_w = {"family": 0.5, "genus": 1.0, "species": 1.0}
+    log_prior = None
+    if args.logit_adjust > 0:
+        # prior of the *sampled* distribution: counts^(1 - balance_power)
+        log_prior = {
+            lvl: torch.tensor(
+                args.logit_adjust * (1 - args.balance_power) * np.log(train_counts[lvl] + 1.0), device=device
+            ).float()
+            for lvl in LEVELS
+        }
+        log_prior = {k: v - v.mean() for k, v in log_prior.items()}
 
     log = []
     best, best_score = None, -1.0
@@ -291,7 +309,9 @@ def main() -> None:
             tb = {k: v.to(device, non_blocking=True) for k, v in batch.items() if k.startswith("t_")}
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 lg = model(x)
-            loss = hier_loss(lg, y, tb, args.smoothing, args.kd_alpha if teacher else 0.0, args.kd_t, level_w)
+            loss = hier_loss(
+                lg, y, tb, args.smoothing, args.kd_alpha if teacher else 0.0, args.kd_t, level_w, log_prior
+            )
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)

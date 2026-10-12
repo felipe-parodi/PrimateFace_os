@@ -335,7 +335,8 @@ def main() -> None:
     recs = run_crops(cand, crop_dir, log_path, args.threads)
 
     ok = cand[[recs.get(c, {}).get("status") == "ok" and "thumb" in recs.get(c, {}) for c in cand.crop_id]].copy()
-    fails = {c: recs.get(c, {}).get("status", "missing") for c in cand.crop_id if c not in set(ok.crop_id)}
+    ok_ids = set(ok.crop_id)
+    fails = {c: recs.get(c, {}).get("status", "missing") for c in cand.crop_id if c not in ok_ids}
     pv = pseudo_video_groups(ok.crop_id.tolist(), recs, args.sim_thr)
     ok["video_id"] = [pv[c] if pd.isna(p) else p for p, c in zip(ok.parsed_video, ok.crop_id)]
     ok["video_id_source"] = np.where(ok.parsed_video.notna(), "filename", "pseudo_thumb_cluster")

@@ -29,7 +29,7 @@ MIN_SPECIES_IMGS = 20
 # Labels trusted only to genus (web search folders, unverified community IDs).
 GENUS_ONLY_SOURCES = {"bing_folder", "inat_casual", "inat_needs_id"}
 # Labels verified enough to evaluate on (community-agreed or curated).
-EVAL_SOURCES = {"inat_research", "gbif", "treeoflife_gbif"}
+EVAL_SOURCES = {"inat_research", "gbif_inat_research", "gbif", "treeoflife_gbif"}
 EXCLUDED_LICENSES = {"all-rights-reserved"}
 
 
@@ -54,12 +54,13 @@ class _UnionFind:
             self.parent[rb] = ra
 
 
-def build_groups(df: pd.DataFrame) -> pd.Series:
+def build_groups(df: pd.DataFrame, dup_pairs: Optional[pd.DataFrame] = None) -> pd.Series:
     """Compute leakage groups by merging shared image/observer/group keys.
 
     Args:
         df: Manifest with columns ``crop_id`` and optionally ``image_sha256``,
             ``observer_id``, ``group_id``, ``image_path``.
+        dup_pairs: Optional near-duplicate pairs (``crop_a``, ``crop_b``) to merge.
 
     Returns:
         Series of group root ids aligned with ``df.index``.
@@ -73,6 +74,11 @@ def build_groups(df: pd.DataFrame) -> pd.Series:
             if val is None or (isinstance(val, float) and np.isnan(val)) or str(val) in ("", "nan", "None"):
                 continue
             uf.union(node, f"{col}:{val}")
+    if dup_pairs is not None and len(dup_pairs):
+        present = set(df["crop_id"])
+        for a, b in zip(dup_pairs["crop_a"], dup_pairs["crop_b"]):
+            if a in present and b in present:
+                uf.union(f"crop:{a}", f"crop:{b}")
     return pd.Series([uf.find(f"crop:{c}") for c in df["crop_id"]], index=df.index)
 
 
@@ -193,6 +199,7 @@ def main() -> None:
     ap.add_argument("--taxonomy", type=Path, required=True)
     ap.add_argument("--out-dir", type=Path, required=True)
     ap.add_argument("--min-species", type=int, default=MIN_SPECIES_IMGS)
+    ap.add_argument("--dup-pairs", type=Path, default=None, help="near-duplicate pairs from dedupe.py")
     args = ap.parse_args()
 
     tax = PrimateTaxonomy.from_json(args.taxonomy)
@@ -204,7 +211,8 @@ def main() -> None:
         df = df[~df["license"].isin(EXCLUDED_LICENSES)]
     df = attach_labels(df, tax)
     df = df[df["genus"].notna() & (df["genus"] != "Homo")].reset_index(drop=True)
-    df["group"] = build_groups(df)
+    dups = pd.read_parquet(args.dup_pairs) if args.dup_pairs else None
+    df["group"] = build_groups(df, dups)
     df["strat"] = df["species"].fillna(df["genus"])
 
     # Groups containing any eval-eligible crop are split; others go to train. A group is
@@ -214,11 +222,16 @@ def main() -> None:
     in_eval = df["group"].isin(eligible_groups)
     df.loc[in_eval, "split"] = assign_splits(df[in_eval], "strat").values
     # Bing genus-only: a held-out genus test of its own, never mixed into the main test.
-    bing = df[(df["label_source"] == "bing_folder") & ~in_eval]
+    is_bing = df["label_source"] == "bing_folder"
+    bing = df[is_bing & ~in_eval]
     if len(bing):
-        df.loc[bing.index, "split"] = assign_splits(bing, "genus", test_frac=0.10, val_frac=0.0).replace(
-            {"test": "test_bing"}
-        ).values
+        bing_split = assign_splits(bing, "genus", test_frac=0.10, val_frac=0.0)
+        group_split = dict(zip(bing["group"], bing_split))
+        rows = ~in_eval & df["group"].isin(group_split)
+        new = df.loc[rows, "group"].map(group_split).replace({"test": "test_bing"})
+        # non-Bing crops sharing a held-out Bing group are excluded from train and eval
+        new[(new == "test_bing") & ~is_bing[rows]] = "test_bing_unverified"
+        df.loc[rows, "split"] = new
 
     # Unverified crops that share a group with held-out crops are kept out of both train
     # and evaluation.
