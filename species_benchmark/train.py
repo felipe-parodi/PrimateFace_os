@@ -27,6 +27,18 @@ from species_benchmark.metrics import coverage_curve, level_metrics
 from species_benchmark.model import LEVELS, TaxonClassifier, taxon_prompts
 
 DATA_DIR = Path("C:/pfspecies/data")
+EXTERNAL_TESTS = {"ext_rare_species": Path("C:/pfspecies/external/rare_species_test.parquet")}
+
+
+def load_external(path: Path, space: Dict[str, object]) -> pd.DataFrame:
+    """Load an external test parquet and index its labels into ``space``.
+
+    Classes outside the label space get -1 at that level (counted as unlabeled).
+    """
+    df = pd.read_parquet(path)
+    for lvl in LEVELS:
+        df[f"{lvl}_idx"] = df[lvl].map({c: i for i, c in enumerate(space[lvl])}).fillna(-1).astype(int)
+    return df
 
 
 class CropDataset(Dataset):
@@ -223,6 +235,9 @@ def main() -> None:
         train_df = train_df.sample(min(args.max_train, len(train_df)), random_state=0)
     val_df = df[df["split"] == "val"]
     tests = {s: df[df["split"] == s] for s in ("test", "test_bing") if (df["split"] == s).any()}
+    tests.update({k: load_external(p, space) for k, p in EXTERNAL_TESTS.items() if p.exists()})
+    if (args.data_dir / "yt_consensus_test.parquet").exists():
+        tests["test_yt_consensus"] = pd.read_parquet(args.data_dir / "yt_consensus_test.parquet")
 
     n_classes = {lvl: len(space[lvl]) for lvl in LEVELS}
     model = TaxonClassifier(args.backbone, n_classes).to(device)
