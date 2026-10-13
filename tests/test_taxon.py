@@ -77,6 +77,39 @@ def test_rejects_wrong_format(tmp_path):
         TaxonClassifier(bad)
 
 
+def test_default_taxon_model_is_registered_tinyvit():
+    from primateface._model_registry import DEFAULT_TAXON_MODEL, TAXON_MODELS
+    from primateface.taxon import resolve_taxon_name
+
+    assert DEFAULT_TAXON_MODEL == "taxon_tinyvit5m"
+    assert DEFAULT_TAXON_MODEL in TAXON_MODELS
+    assert resolve_taxon_name(True) == DEFAULT_TAXON_MODEL
+    assert resolve_taxon_name("default") == DEFAULT_TAXON_MODEL
+    assert resolve_taxon_name("taxon_convnext_atto") == "taxon_convnext_atto"
+    assert resolve_taxon_name(None) is None and resolve_taxon_name(False) is None
+
+
+def test_cli_bare_taxon_flag_uses_default():
+    import argparse
+
+    from primateface import cli
+
+    seen = {}
+
+    def fake_analyze(args: argparse.Namespace) -> int:
+        seen["taxon_model"] = args.taxon_model
+        return 0
+
+    cli._cmd_analyze, orig = fake_analyze, cli._cmd_analyze
+    try:
+        cli.main(["analyze", "x.jpg", "--taxon-model"])
+        assert seen["taxon_model"] == "default"
+        cli.main(["analyze", "x.jpg"])
+        assert seen["taxon_model"] is None
+    finally:
+        cli._cmd_analyze = orig
+
+
 def test_face_taxon_property_requires_model():
     from primateface.face import Face
 

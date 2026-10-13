@@ -77,6 +77,9 @@ def collect(runs_dir: Path) -> pd.DataFrame:
                 row[f"{lvl}_{met}"] = _get(m, "test", lvl, met)
         row["bing_genus_top1"] = _get(m, "test_bing", "genus", "top1")
         row["bing_genus_f1"] = _get(m, "test_bing", "genus", "macro_f1")
+        for lvl in ("genus", "species"):
+            row[f"rare_{lvl}_top1"] = _get(m, "ext_rare_species", lvl, "top1")
+            row[f"yt_{lvl}_top1"] = _get(m, "test_yt_consensus", lvl, "top1")
         cov = _get(m, "test", "coverage", default=[])
         if isinstance(cov, list) and cov:
             best = [c for c in cov if c["threshold"] == 0.7] or cov[-1:]
@@ -134,7 +137,7 @@ def main() -> None:
     cols = [
         "run", "kind", "params_M", "gpu_img_s", "cpu_ms", "family_top1", "genus_top1", "genus_macro_f1",
         "species_top1", "species_macro_f1", "species_macro_f1_tail", "species_ece", "hier_acc@0.7", "sp_cov@0.7",
-        "bing_genus_top1",
+        "bing_genus_top1", "rare_genus_top1", "rare_species_top1", "yt_genus_top1",
     ]
     cols = [c for c in cols if c in df.columns]
     (args.out / "benchmark.md").write_text(df[cols].to_markdown(index=False, floatfmt=".3f"))

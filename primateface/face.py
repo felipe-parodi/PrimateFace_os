@@ -133,7 +133,7 @@ class Face:
         if self._taxon is None:
             raise RuntimeError(
                 "No taxon model loaded. Initialize with: "
-                "PrimateFace(taxon_model='taxon_convnext_atto')"
+                "PrimateFace(taxon_model=True)"
             )
         return self._taxon
 

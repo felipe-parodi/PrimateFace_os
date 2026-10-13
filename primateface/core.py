@@ -45,10 +45,11 @@ class PrimateFace:
         nms_threshold: NMS threshold for overlapping detections.
         model_dir: Directory to cache model files. If *None*, uses
             HuggingFace Hub default cache (``~/.cache/huggingface/``).
-        taxon_model: Optional taxon classifier (registry name such as
-            ``"taxon_convnext_atto"`` or a path to an exported ``.pt``).
-            When set, each :class:`Face` gets a ``taxon`` prediction
-            (family / genus / species with confidence roll-up).
+        taxon_model: Optional taxon classifier. ``True`` or ``"default"``
+            loads the default model (``"taxon_tinyvit5m"``); a registry name
+            such as ``"taxon_convnext_atto"`` or a path to an exported ``.pt``
+            loads that model. When set, each :class:`Face` gets a ``taxon``
+            prediction (family / genus / species with confidence roll-up).
     """
 
     def __init__(
@@ -59,7 +60,7 @@ class PrimateFace:
         det_threshold: float = 0.5,
         nms_threshold: float = 0.3,
         model_dir: Optional[Union[str, Path]] = None,
-        taxon_model: Optional[Union[str, Path]] = None,
+        taxon_model: Optional[Union[str, Path, bool]] = None,
     ) -> None:
         import torch
 
@@ -89,12 +90,14 @@ class PrimateFace:
             _, self._embedding_fn = EMBEDDING_BACKENDS[embedding_model](device)
 
         # Optional taxon classifier
-        self.taxon_model = taxon_model
+        from .taxon import resolve_taxon_name
+
+        self.taxon_model = resolve_taxon_name(taxon_model)
         self._taxon_clf = None
-        if taxon_model is not None:
+        if self.taxon_model is not None:
             from .taxon import TaxonClassifier
 
-            self._taxon_clf = TaxonClassifier.from_pretrained(str(taxon_model), device=device)
+            self._taxon_clf = TaxonClassifier.from_pretrained(self.taxon_model, device=device)
 
         # Resolve model paths (downloads from HF if needed)
         pose_variant = POSE_MODEL_VARIANTS[pose_model]

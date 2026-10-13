@@ -6,7 +6,7 @@ Low-confidence species predictions roll up to genus, then family.
 
 Example:
     >>> from primateface.taxon import TaxonClassifier
-    >>> clf = TaxonClassifier.from_pretrained("taxon_convnext_atto")
+    >>> clf = TaxonClassifier.from_pretrained()  # default: "taxon_tinyvit5m"
     >>> pred = clf.predict_bbox(bgr_image, [x1, y1, x2, y2])
     >>> pred.label, pred.level, pred.confidence
     ('Macaca fuscata', 'species', 0.93)
@@ -24,6 +24,25 @@ import numpy as np
 LEVELS = ("family", "genus", "species")
 EXPORT_FORMAT = "primateface-taxon-v1"
 CLIP_HUBS = {"bioclip2": "hf-hub:imageomics/bioclip-2", "bioclip": "hf-hub:imageomics/bioclip"}
+
+
+def resolve_taxon_name(name: Union[str, Path, bool, None]) -> Optional[str]:
+    """Map the user-facing ``taxon_model`` value to a registry name or path.
+
+    Args:
+        name: ``None``/``False`` (no model), ``True``/``"default"`` (the default
+            model), a registry name, or a checkpoint path.
+
+    Returns:
+        Registry name or path string, or ``None`` when no model is requested.
+    """
+    if name is None or name is False:
+        return None
+    if name is True or name == "default":
+        from ._model_registry import DEFAULT_TAXON_MODEL
+
+        return DEFAULT_TAXON_MODEL
+    return str(name)
 
 
 @dataclass
@@ -177,17 +196,22 @@ class TaxonClassifier:
         self.net.eval().to(device)
 
     @classmethod
-    def from_pretrained(cls, name: str = "taxon_convnext_atto", device: str = "cpu", **kwargs) -> "TaxonClassifier":
+    def from_pretrained(cls, name: Union[str, bool] = "default", device: str = "cpu", **kwargs) -> "TaxonClassifier":
         """Load a registered model by name or a local checkpoint path.
 
         Args:
-            name: Registry name (see ``primateface models list``) or a path.
+            name: Registry name (see ``primateface models list``), a path, or
+                ``"default"`` / ``True`` for the default model.
             device: Torch device.
             **kwargs: Passed to the constructor.
 
         Returns:
             Loaded classifier.
         """
+        resolved = resolve_taxon_name(name)
+        if resolved is None:
+            raise ValueError("from_pretrained needs a model name, path, or 'default'")
+        name = resolved
         p = Path(name)
         if p.suffix in (".pt", ".pth") and p.exists():
             return cls(p, device=device, **kwargs)

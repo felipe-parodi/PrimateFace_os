@@ -111,8 +111,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Detection confidence threshold (default: 0.5)",
     )
     p_analyze.add_argument(
-        "--taxon-model", default=None,
-        help="Taxon classifier (e.g. taxon_convnext_atto or path to .pt)",
+        "--taxon-model", nargs="?", const="default", default=None,
+        help="Add taxon labels; bare flag uses the default (taxon_tinyvit5m), "
+        "or name a model (e.g. taxon_convnext_atto) or a .pt path",
     )
 
     # -- models --

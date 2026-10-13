@@ -99,7 +99,8 @@ MODEL_ENTRIES: List[ModelEntry] = [
 # -- Taxon (family/genus/species) face classifiers --
 # variant = name accepted by ``PrimateFace(taxon_model=...)``.
 TAXON_MODELS: Dict[str, str] = {
-    "taxon_convnext_atto": "ConvNeXt-Atto hierarchical taxon classifier (3.7M params, CPU-friendly)",
+    "taxon_tinyvit5m": "TinyViT-5M hierarchical taxon classifier (5.4M params, default)",
+    "taxon_convnext_atto": "ConvNeXt-Atto hierarchical taxon classifier (3.7M params, fastest on CPU)",
     "taxon_bioclip2": "BioCLIP 2 ViT-L/14 fine-tuned hierarchical taxon classifier (teacher)",
 }
 MODEL_ENTRIES += [
@@ -114,6 +115,8 @@ MODEL_ENTRIES += [
     )
     for name, desc in TAXON_MODELS.items()
 ]
+# Used by ``taxon_model=True`` / ``"default"`` and ``--taxon-model`` without a value.
+DEFAULT_TAXON_MODEL = "taxon_tinyvit5m"
 
 
 # ---------- Derived convenience mappings ----------
