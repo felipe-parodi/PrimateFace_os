@@ -45,7 +45,8 @@ def build_backbone(
     if name in CLIP_BACKBONES:
         import open_clip
 
-        clip, _, _ = open_clip.create_model_and_transforms(CLIP_BACKBONES[name] if pretrained else None)
+        hub = CLIP_BACKBONES[name]
+        clip = open_clip.create_model_and_transforms(hub)[0] if pretrained else open_clip.create_model(hub, pretrained=None)
         visual = clip.visual
         dim = visual.output_dim
         cfg = {"input_size": (3, 224, 224), "mean": CLIP_MEAN, "std": CLIP_STD}

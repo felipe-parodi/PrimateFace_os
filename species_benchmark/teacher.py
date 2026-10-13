@@ -30,7 +30,7 @@ from species_benchmark.metrics import softmax
 from species_benchmark.model import LEVELS, TaxonClassifier
 from species_benchmark.train import CropDataset, make_transforms
 
-YT_MANIFEST = "yt_pool_manifest.parquet"
+YT_MANIFEST = "yt_pool_primates.parquet"  # written by finalize.py (humans removed)
 
 
 def _with_dummy_labels(df: pd.DataFrame) -> pd.DataFrame:
