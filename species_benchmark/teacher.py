@@ -144,10 +144,33 @@ def build_pool(teacher_paths: List[Path], data_dir: Path, test_frac: float = 0.1
     return summary
 
 
+def ensemble_logits(paths: List[Path], out: Path) -> None:
+    """Average teacher logits (aligned on crop_id) into one KD target file.
+
+    Logits are averaged in log-probability space, so teachers with different
+    temperatures/scales contribute comparably.
+
+    Args:
+        paths: Teacher npz files with identical label spaces.
+        out: Output npz path.
+    """
+    zs = [np.load(p, allow_pickle=True) for p in paths]
+    ids = zs[0]["crop_id"]
+    res = {"crop_id": ids}
+    for lvl in LEVELS:
+        acc = np.zeros(zs[0][lvl].shape, dtype=np.float32)
+        for z in zs:
+            idx = pd.Series(np.arange(len(z["crop_id"])), index=z["crop_id"]).reindex(ids).to_numpy().astype(int)
+            lg = z[lvl][idx].astype(np.float32)
+            acc += lg - np.log(np.exp(lg - lg.max(1, keepdims=True)).sum(1, keepdims=True)) - lg.max(1, keepdims=True)
+        res[lvl] = (acc / len(zs)).astype(np.float16)
+    np.savez(out, **res)
+
+
 def main() -> None:
     """CLI entry point."""
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("cmd", choices=["logits", "pool"])
+    ap.add_argument("cmd", choices=["logits", "pool", "ensemble"])
     ap.add_argument("--run", type=Path)
     ap.add_argument("--data-dir", type=Path, default=Path("C:/pfspecies/data"))
     ap.add_argument("--out", type=Path)
@@ -164,6 +187,9 @@ def main() -> None:
         lg = run_logits(args.run, df.reset_index(drop=True))
         np.savez(args.out, crop_id=df["crop_id"].to_numpy(), **lg)
         print(f"wrote {args.out} ({len(df)} crops)")
+    elif args.cmd == "ensemble":
+        ensemble_logits(args.teachers, args.out)
+        print(f"wrote {args.out}")
     else:
         print(json.dumps(build_pool(args.teachers, args.data_dir, conf=args.conf), indent=1))
 

@@ -71,3 +71,20 @@ def test_coverage_curve_rolls_up_to_genus():
     rows = coverage_curve(g_logits, sp_logits, np.array([0, 0]), np.array([1, 0]), np.array([0, 0]), [0.0, 0.9])
     assert rows[0]["species_coverage"] == 1.0 and rows[0]["hier_accuracy"] == 0.0
     assert rows[1]["species_coverage"] == 0.0 and rows[1]["hier_accuracy"] == 1.0
+
+
+def test_ensemble_logits_averages_log_probs(tmp_path):
+    """Teacher ensembling aligns on crop_id and averages log-probabilities."""
+    from species_benchmark.model import LEVELS
+    from species_benchmark.teacher import ensemble_logits
+
+    a = {lvl: np.array([[2.0, 0.0], [0.0, 2.0]]) for lvl in LEVELS}
+    b = {lvl: np.array([[0.0, 4.0], [4.0, 0.0]]) for lvl in LEVELS}  # rows in swapped order
+    np.savez(tmp_path / "a.npz", crop_id=np.array(["x", "y"]), **a)
+    np.savez(tmp_path / "b.npz", crop_id=np.array(["y", "x"]), **b)
+    ensemble_logits([tmp_path / "a.npz", tmp_path / "b.npz"], tmp_path / "e.npz")
+    e = np.load(tmp_path / "e.npz", allow_pickle=True)
+    assert list(e["crop_id"]) == ["x", "y"]
+    p = np.exp(e["genus"].astype(np.float64))
+    # crop x: teacher a favours class 0 (logit gap 2), teacher b favours class 0 (gap 4)
+    assert p[0, 0] > 0.9 and p[1, 1] > 0.9
