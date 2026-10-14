@@ -83,3 +83,15 @@ the PrimateFace API (`Face.taxon`). MVP first, then scale.
 - Label noise (Bing queries, GBIF misidentifications) → genus-only for Bing; teacher-consensus filter.
 - Captive macaque dominance → class-balanced sampling, macro metrics.
 - Network drive IO → all crops/features on local SSD.
+
+## Outcome (2026-10-14)
+
+- Teacher: BioCLIP 2 full fine-tune, test genus 98.0 / species 91.9 (Rare Species 90.6 / 77.1).
+- API default: TinyViT-5M (plain CE), test genus 97.5 / species 90.9, 8.8 ms CPU (ONNX, 4 threads).
+  Alternatives registered: `taxon_repvit` (distilled, 97.6 / 91.3, 7.4 ms), `taxon_convnext_atto`
+  (96.5 / 88.8, 3.8 ms), `taxon_bioclip2` (teacher, needs open_clip).
+- Distillation from BioCLIP 2 changed species top-1 by -0.7 to +0.7 points across ten students.
+- Dropped by user decision: PE-L and DINOv3-L fine-tunes, and with them the two-teacher YouTube
+  consensus test. DINOv3-L remains as a linear-probe reference row (97.1 / 89.9).
+- Report: `results/species_classifier_261012/primate_taxon_benchmark.html`; figures, CSV, models,
+  demos and review grids alongside it.
