@@ -123,7 +123,12 @@ def _build_net(backbone: str, n_classes: Dict[str, int], cosine: bool, img_size:
         def __init__(self) -> None:
             super().__init__()
             if backbone in CLIP_HUBS:
-                import open_clip
+                try:
+                    import open_clip
+                except ImportError as e:
+                    raise ImportError(
+                        f"Taxon backbone {backbone!r} needs open_clip: pip install open-clip-torch"
+                    ) from e
 
                 clip = open_clip.create_model(CLIP_HUBS[backbone], pretrained=None)
                 self.backbone = nn.Module()
