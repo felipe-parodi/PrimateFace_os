@@ -96,6 +96,29 @@ MODEL_ENTRIES: List[ModelEntry] = [
     ),
 ]
 
+# -- Taxon (family/genus/species) face classifiers --
+# variant = name accepted by ``PrimateFace(taxon_model=...)``.
+TAXON_MODELS: Dict[str, str] = {
+    "taxon_tinyvit5m": "TinyViT-5M taxon classifier (5.2M params, default)",
+    "taxon_repvit": "RepViT-M1.1 taxon classifier distilled from BioCLIP 2 (8.0M params)",
+    "taxon_convnext_atto": "ConvNeXt-Atto taxon classifier (3.5M params, fastest on CPU)",
+    "taxon_bioclip2": "BioCLIP 2 ViT-L/14 fine-tuned taxon classifier (304M params, teacher; needs open_clip)",
+}
+MODEL_ENTRIES += [
+    ModelEntry(
+        local_name=f"{name}.pt",
+        hf_subfolder="taxon",
+        hf_filename=f"{name}.pt",
+        task="taxon",
+        file_type="checkpoint",
+        description=desc,
+        variant=name,
+    )
+    for name, desc in TAXON_MODELS.items()
+]
+# Used by ``taxon_model=True`` / ``"default"`` and ``--taxon-model`` without a value.
+DEFAULT_TAXON_MODEL = "taxon_tinyvit5m"
+
 
 # ---------- Derived convenience mappings ----------
 

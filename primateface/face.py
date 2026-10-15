@@ -40,6 +40,7 @@ class Face:
     _embedding_backend: Optional[str] = field(
         repr=False, compare=False, default=None
     )
+    _taxon: Optional[Any] = field(repr=False, compare=False, default=None)
 
     # -- Eager convenience properties --
 
@@ -117,6 +118,25 @@ class Face:
         """Distance between eye centers in pixels."""
         return self.kinematics["interocular_distance"]
 
+    # -- Taxonomy --
+
+    @property
+    def taxon(self) -> Any:
+        """Hierarchical taxon prediction (:class:`primateface.taxon.TaxonPrediction`).
+
+        ``face.taxon.label`` is the most specific confident name and
+        ``face.taxon.level`` its rank (species, genus, or family).
+
+        Raises:
+            RuntimeError: If no taxon model was configured.
+        """
+        if self._taxon is None:
+            raise RuntimeError(
+                "No taxon model loaded. Initialize with: "
+                "PrimateFace(taxon_model=True)"
+            )
+        return self._taxon
+
     # -- Embedding / re-identification --
 
     def _get_aligned_crop(self) -> Optional[np.ndarray]:
@@ -188,16 +208,22 @@ class Face:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to a plain dict (excludes image reference)."""
-        return {
+        out = {
             "bbox": self.bbox.tolist(),
             "score": self.score,
             "keypoints": self.keypoints.tolist(),
         }
+        if self._taxon is not None:
+            out["taxon"] = self._taxon.to_dict()
+        return out
 
     def __repr__(self) -> str:
         x1, y1, x2, y2 = self.bbox.astype(int)
+        taxon = ""
+        if self._taxon is not None:
+            taxon = f", taxon={self._taxon.label!r} ({self._taxon.level}, {self._taxon.confidence:.2f})"
         return (
             f"Face(score={self.score:.2f}, "
             f"bbox=[{x1}, {y1}, {x2}, {y2}], "
-            f"landmarks=68)"
+            f"landmarks=68{taxon})"
         )

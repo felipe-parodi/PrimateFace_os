@@ -96,3 +96,50 @@ class ModelManager:
             paths[("pose", "config")],
             paths[("pose", "checkpoint")],
         )
+
+
+# ---------- Taxon classifiers ----------
+
+TAXON_ENV_VAR = "PRIMATEFACE_TAXON_DIR"
+
+
+def resolve_taxon_checkpoint(
+    name: str, model_dir: Optional[Union[str, Path]] = None
+) -> Path:
+    """Locate a taxon classifier checkpoint by registry name.
+
+    Search order: ``model_dir``, ``$PRIMATEFACE_TAXON_DIR``,
+    ``~/.cache/primateface/taxon``, then the HF Hub repo.
+
+    Args:
+        name: Registry variant name, e.g. ``"taxon_convnext_atto"``.
+        model_dir: Optional directory to search first.
+
+    Returns:
+        Path to the ``.pt`` checkpoint.
+
+    Raises:
+        KeyError: If ``name`` is not a registered taxon model.
+    """
+    import os
+
+    entry = get_model_entry("taxon", "checkpoint", name)
+    candidates = []
+    if model_dir is not None:
+        candidates.append(Path(model_dir))
+    if os.environ.get(TAXON_ENV_VAR):
+        candidates.append(Path(os.environ[TAXON_ENV_VAR]))
+    candidates.append(Path.home() / ".cache" / "primateface" / "taxon")
+    for d in candidates:
+        p = d / entry.local_name
+        if p.exists():
+            return p
+    return Path(
+        hf_hub_download(
+            repo_id=HF_REPO_ID,
+            filename=entry.hf_filename,
+            subfolder=entry.hf_subfolder,
+            library_name=LIBRARY_NAME,
+            library_version=LIBRARY_VERSION,
+        )
+    )

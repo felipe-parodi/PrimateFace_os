@@ -22,6 +22,7 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
         device=args.device,
         pose_model=args.pose_model,
         det_threshold=args.det_threshold,
+        taxon_model=args.taxon_model,
     )
 
     input_path = Path(args.input)
@@ -108,6 +109,11 @@ def main(argv: list[str] | None = None) -> int:
     p_analyze.add_argument(
         "--det-threshold", type=float, default=0.5,
         help="Detection confidence threshold (default: 0.5)",
+    )
+    p_analyze.add_argument(
+        "--taxon-model", nargs="?", const="default", default=None,
+        help="Add taxon labels; bare flag uses the default (taxon_tinyvit5m), "
+        "or name a model (e.g. taxon_convnext_atto) or a .pt path",
     )
 
     # -- models --
